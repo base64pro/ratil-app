@@ -83,18 +83,18 @@ body {
   align-items: center;
   padding: 3rem;
   /* --- التعديل الأساسي هنا --- */
-  justify-content: flex-end; /* لدفع المحتوى إلى الأسفل */
-  padding-bottom: 10vh;   /* لرفع المحتوى من الأسفل بنسبة 10% من ارتفاع الشاشة */
+  justify-content: center; /* 1. توسيط المحتوى عموديًا */
+  transform: translateY(-5vh); /* 2. رفع المحتوى للأعلى 5% من ارتفاع الشاشة */
 }
 
 .logo-container {
-  flex-grow: 0; /* إلغاء التمدد ليبقى الحجم طبيعيًا */
+  flex-grow: 0; /* إلغاء التمدد للسماح بالتوسيط */
   flex-shrink: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 3rem; /* مسافة بين الشعار والأزرار */
+  margin-bottom: 3rem; 
 
   .logo {
     max-width: 550px;
@@ -281,7 +281,7 @@ body {
   .main-content {
     justify-content: flex-start;
     padding: 0;
-    padding-bottom: 0; /* Reset padding for mobile */
+    transform: none; /* إلغاء التحريك للموبايل */
   }
   
   .logo-container {
@@ -303,8 +303,8 @@ body {
     width: 100%;
     max-width: 500px;
     padding: 1rem 0;
-    justify-content: flex-start; /* Changed to start to avoid cutting off buttons */
-    overflow-y: auto; /* Allow scrolling if buttons overflow */
+    justify-content: flex-start;
+    overflow-y: auto;
   }
   
   .nav-button {
@@ -312,7 +312,7 @@ body {
     font-size: 1.2rem;
     padding: 18px; 
     min-height: auto;
-    flex-shrink: 0; /* Prevent buttons from shrinking */
+    flex-shrink: 0;
     transform: none !important;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1);
 
