@@ -83,18 +83,18 @@ body {
   align-items: center;
   padding: 3rem;
   /* --- التعديل الأساسي هنا --- */
-  justify-content: center; /* توسيط المحتوى عموديًا */
-  padding-bottom: 15vh; /* دفع المحتوى بالكامل للأعلى بنسبة 15% من ارتفاع الشاشة */
+  justify-content: flex-end; /* لدفع المحتوى إلى الأسفل */
+  padding-bottom: 10vh;   /* لرفع المحتوى من الأسفل بنسبة 10% من ارتفاع الشاشة */
 }
 
 .logo-container {
-  flex-grow: 0; /* تم التعديل هنا لإلغاء التمدد */
+  flex-grow: 0; /* إلغاء التمدد ليبقى الحجم طبيعيًا */
   flex-shrink: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 2rem; /* إضافة مسافة بين الشعار والأزرار */
+  margin-bottom: 3rem; /* مسافة بين الشعار والأزرار */
 
   .logo {
     max-width: 550px;
