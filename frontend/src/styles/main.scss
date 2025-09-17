@@ -71,9 +71,9 @@ body {
   flex-direction: column;
   position: relative;
   font-family: 'Ithra Bold', sans-serif !important;
-  border: 5px solid red; /* --- سطر التشخيص: إذا لم يظهر هذا، فالمشكلة في الذاكرة المؤقتة --- */
 }
 
+/* --- التعديل الأساسي والدقيق هنا --- */
 .main-content {
   position: relative;
   z-index: 2;
@@ -82,9 +82,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* --- التعديل النهائي هنا --- */
   justify-content: flex-start; /* 1. تثبيت المحتوى في الأعلى */
-  padding: 10vh 3rem 3rem; /* 2. دفعه للأسفل من الأعلى بنسبة 10% من ارتفاع الشاشة */
+  padding: 10vh 3rem 3rem;   /* 2. دفعه للأسفل من الأعلى بنسبة 10% من ارتفاع الشاشة */
 }
 
 .logo-container {
