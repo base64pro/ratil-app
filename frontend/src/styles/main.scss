@@ -82,7 +82,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 10vh;
+  /* --- التعديل الأساسي هنا: يمكنك تصغير هذه القيمة لرفع المحتوى أكثر --- */
+  padding-top: 8vh;
   padding-left: 3rem;
   padding-right: 3rem;
   padding-bottom: 3rem;
@@ -95,7 +96,8 @@ body {
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 0.5rem;
+  /* --- تم تقليل المسافة هنا أيضًا --- */
+  margin-bottom: 1rem; 
 
   .logo {
     max-width: 550px;
@@ -111,7 +113,8 @@ body {
 .navigation-container {
   width: 100%;
   max-width: 1600px;
-  padding: 0.5rem 0; /* --- تم التعديل هنا لتقليل المسافة أكثر --- */
+  /* --- تم تقليل المسافة هنا أيضًا --- */
+  padding: 1rem 0;
   display: flex;
   justify-content: center;
   align-items: center;
