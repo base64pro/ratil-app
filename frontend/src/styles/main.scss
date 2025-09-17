@@ -95,7 +95,7 @@ body {
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 0.5rem; /* --- تم التعديل هنا لتقليل المسافة أكثر --- */
+  margin-bottom: 0.5rem;
 
   .logo {
     max-width: 550px;
@@ -111,7 +111,7 @@ body {
 .navigation-container {
   width: 100%;
   max-width: 1600px;
-  padding: 2rem 0;
+  padding: 0.5rem 0; /* --- تم التعديل هنا لتقليل المسافة أكثر --- */
   display: flex;
   justify-content: center;
   align-items: center;
