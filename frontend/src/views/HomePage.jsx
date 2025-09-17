@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import ParticleBackground from '../components/ParticleBackground';
 
-// --- 1. استقبال onLogout و user كـ props ---
 function HomePage({ onNavigate, user, onLogout }) {
   
   const buttons = [
@@ -12,12 +11,29 @@ function HomePage({ onNavigate, user, onLogout }) {
     { title: 'معرض بيع الاجهزة والمعدات الطباعية', key: 'exhibition' }
   ];
 
+  // --- START: دالة تفعيل ملء الشاشة ---
+  const handleFullScreen = () => {
+    const elem = document.documentElement; // Get the root element of the page
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) { /* Safari */
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE11 */
+      elem.msRequestFullscreen();
+    }
+  };
+  // --- END: دالة تفعيل ملء الشاشة ---
+
   return (
     <div className="app-container">
       <ParticleBackground />
       
-      {/* --- 2. إضافة الشريط العلوي الجديد --- */}
       <header className="app-header">
+        {/* --- START: زر ملء الشاشة الجديد --- */}
+        <button onClick={handleFullScreen} className="logout-button" style={{background: 'rgba(80, 150, 255, 0.1)', borderColor: 'rgba(80, 150, 255, 0.3)', color: '#aaccff'}}>
+          ملء الشاشة
+        </button>
+        {/* --- END: زر ملء الشاشة الجديد --- */}
         <div className="user-info">
           مرحباً، {user?.username || 'زائر'}
         </div>
