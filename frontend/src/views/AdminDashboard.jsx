@@ -5,6 +5,9 @@ import Swal from 'sweetalert2';
 import ParticleBackground from '../components/ParticleBackground';
 import { useAuth } from '../context/AuthContext'; // Import useAuth to get current user
 
+// --- تم التعديل هنا ---
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 // Styles for the Admin Dashboard
 const AdminDashboardStyles = `
   .page-container {
@@ -364,8 +367,6 @@ function AdminDashboard({ onBack }) {
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:8000';
-
   const fetchAllData = async () => {
     setLoadingUsers(true);
     setLoadingContent(true);
@@ -709,7 +710,7 @@ function AdminDashboard({ onBack }) {
         {isVisible ? (
           <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></>
         ) : (
-          <><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></>
+           <><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></>
         )}
       </svg>
     </span>
@@ -759,7 +760,7 @@ function AdminDashboard({ onBack }) {
                 <div className="form-input-group">
                   <label className="form-label" htmlFor="content-category">اختر القسم الرئيسي</label>
                   <select id="content-category" className="form-select" value={contentCategory} onChange={e => setContentCategory(e.target.value)}>
-                      <option value="printedMaterials">المواد المطبوعة</option>
+                    <option value="printedMaterials">المواد المطبوعة</option>
                       <option value="billboards">تاجير لافتات طرقية عملاقة</option>
                       <option value="events">تنظيم المؤتمرات والمناسبات</option>
                       <option value="exhibition">معرض بيع الاجهزة والمعدات الطباعية</option>
@@ -916,7 +917,7 @@ function AdminDashboard({ onBack }) {
                         <button type="button" className="action-button edit-button" onClick={retakePicture}>إعادة الالتقاط</button>
                         <button type="button" className="form-button" onClick={confirmCapture}>تأكيد الصورة</button>
                     </>
-                    ) : (
+                     ) : (
                     <button type="button" className="form-button" onClick={takePicture}>التقاط</button>
                     )}
                 </div>
