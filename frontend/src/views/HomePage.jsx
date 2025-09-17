@@ -11,9 +11,9 @@ function HomePage({ onNavigate, user, onLogout }) {
     { title: 'معرض بيع الاجهزة والمعدات الطباعية', key: 'exhibition' }
   ];
 
-  // --- START: دالة تفعيل ملء الشاشة ---
+  // --- START: Fullscreen Logic ---
   const handleFullScreen = () => {
-    const elem = document.documentElement; // Get the root element of the page
+    const elem = document.documentElement;
     if (elem.requestFullscreen) {
       elem.requestFullscreen();
     } else if (elem.webkitRequestFullscreen) { /* Safari */
@@ -22,24 +22,44 @@ function HomePage({ onNavigate, user, onLogout }) {
       elem.msRequestFullscreen();
     }
   };
-  // --- END: دالة تفعيل ملء الشاشة ---
+  
+  // Check if the device is an iPhone to hide the button
+  const isIphone = /iPhone/i.test(navigator.userAgent);
+  // --- END: Fullscreen Logic ---
 
   return (
     <div className="app-container">
       <ParticleBackground />
       
       <header className="app-header">
-        {/* --- START: زر ملء الشاشة الجديد --- */}
-        <button onClick={handleFullScreen} className="logout-button" style={{background: 'rgba(80, 150, 255, 0.1)', borderColor: 'rgba(80, 150, 255, 0.3)', color: '#aaccff'}}>
-          ملء الشاشة
-        </button>
-        {/* --- END: زر ملء الشاشة الجديد --- */}
+        {/* An empty div to push other items to the right */}
+        <div style={{flex: 1}}></div>
+
         <div className="user-info">
           مرحباً، {user?.username || 'زائر'}
         </div>
-        <button onClick={onLogout} className="logout-button">
-          تسجيل الخروج
-        </button>
+
+        <div className="header-actions" style={{flex: 1, justifyContent: 'flex-end'}}>
+          {/* --- The button will only render if the device is NOT an iPhone --- */}
+          {!isIphone && (
+            <button 
+              onClick={handleFullScreen} 
+              className="logout-button" 
+              style={{
+                background: 'rgba(80, 150, 255, 0.1)', 
+                borderColor: 'rgba(80, 150, 255, 0.3)', 
+                color: '#aaccff',
+                order: 1 // Ensure it comes first
+              }}
+            >
+              ملء الشاشة
+            </button>
+          )}
+
+          <button onClick={onLogout} className="logout-button" style={{order: 2}}>
+            تسجيل الخروج
+          </button>
+        </div>
       </header>
 
       <div className="main-content">

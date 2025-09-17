@@ -82,10 +82,12 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 3rem;
+  /* --- تمت إضافة هذا السطر لتوسيط المحتوى عموديًا --- */
+  justify-content: center;
 }
 
 .logo-container {
-  flex-grow: 0.7; /* تم التعديل هنا لرفع الأزرار */
+  flex-grow: 0.8; /* تم التعديل هنا أيضًا للتحكم في المسافة */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -110,6 +112,8 @@ body {
   justify-content: center;
   align-items: center;
   gap: 2.5rem;
+  /* --- تمت إضافة هذا السطر لضمان عدم تمدد الحاوية --- */
+  flex-shrink: 0;
 }
 
 /* ============== ELEGANT WHITE GLASS BUTTONS ============== */
@@ -334,18 +338,31 @@ p, span, div, button, a {
   max-width: 1600px;
   padding: 1rem 3rem;
   display: flex;
-  justify-content: space-between;
+  /* --- تم التعديل هنا لتوزيع العناصر --- */
+  justify-content: space-between; 
   align-items: center;
   position: absolute;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
+  /* --- تمت إضافة هذا السطر لتجميع الأزرار معًا --- */
+  gap: 1rem;
 }
+
+/* --- تمت إضافة هذا الجزء لتجميع الأزرار --- */
+.app-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 
 .user-info {
   font-size: 1.1rem;
   color: var(--text-secondary);
+  /* --- تمت إضافة هذا السطر لترتيب العناصر بشكل صحيح --- */
+  order: 2;
 }
 
 .logout-button {
@@ -358,6 +375,8 @@ p, span, div, button, a {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+   /* --- تمت إضافة هذا السطر لترتيب العناصر بشكل صحيح --- */
+  order: 3;
 }
 
 .logout-button:hover {
