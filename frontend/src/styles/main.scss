@@ -73,6 +73,7 @@ body {
   font-family: 'Ithra Bold', sans-serif !important;
 }
 
+/* --- التعديل الأساسي هنا --- */
 .main-content {
   position: relative;
   z-index: 2;
@@ -81,14 +82,15 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem;
-  /* --- التعديل الأساسي هنا --- */
-  justify-content: center; /* 1. توسيط المحتوى عموديًا */
-  transform: translateY(-5vh); /* 2. رفع المحتوى للأعلى 5% من ارتفاع الشاشة */
+  justify-content: flex-start; /* 1. تثبيت المحتوى في الأعلى */
+  padding-top: 15vh; /* 2. دفعه للأسفل من الأعلى (يمكنك زيادة أو تقليل هذه القيمة) */
+  padding-left: 3rem;
+  padding-right: 3rem;
+  padding-bottom: 3rem;
 }
 
 .logo-container {
-  flex-grow: 0; /* إلغاء التمدد للسماح بالتوسيط */
+  flex-grow: 0; 
   flex-shrink: 0;
   display: flex;
   justify-content: center;
@@ -281,7 +283,7 @@ body {
   .main-content {
     justify-content: flex-start;
     padding: 0;
-    transform: none; /* إلغاء التحريك للموبايل */
+    padding-top: 5rem; /* Reset padding for mobile */
   }
   
   .logo-container {
@@ -381,11 +383,6 @@ p, span, div, button, a {
   background: rgba(255, 80, 80, 0.3);
   color: #ffffff;
   box-shadow: 0 0 15px rgba(255, 80, 80, 0.2);
-}
-
-/* Adjust main content padding to avoid overlap with header */
-.main-content {
-  padding-top: 6rem; /* Adjust based on header height */
 }
 
 @media (max-width: 992px) {
