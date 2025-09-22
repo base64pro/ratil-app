@@ -4,15 +4,21 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # 1. رابط الاتصال بقاعدة البيانات
-# سيقرأ هذا الرابط من متغيرات البيئة في سيرفر Render
-# وفي حال عدم وجوده (للعمل المحلي)، سيقوم بإنشاء ملف قاعدة بيانات SQLite بسيط
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///./ratil_app.db')
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# --- START: MODIFICATION ---
+# This is the crucial fix. Render provides a URL starting with "postgres://" 
+# but SQLAlchemy's psycopg2 driver requires "postgresql://".
+# This code automatically corrects the URL if needed.
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# --- END: MODIFICATION ---
 
 # 2. إنشاء محرك SQLAlchemy
-# 'connect_args' ضروري فقط لقواعد بيانات SQLite لتجنب مشاكل معينة
+# 'connect_args' is only needed for SQLite, which we are no longer using on Render.
 engine = create_engine(
     DATABASE_URL, 
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    connect_args={} # This is now always empty for PostgreSQL
 )
 
 # 3. إنشاء جلسة (Session) للتعامل مع قاعدة البيانات
