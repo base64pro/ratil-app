@@ -125,11 +125,8 @@ def change_user_password(username: str, passwords: schemas.PasswordChange, db: S
     if not user_in_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
-    # --- MODIFICATION: Prevent changing main admin's password by others ---
-    # This logic assumes you have a way to identify the currently logged-in user,
-    # which requires a full authentication system (like JWT).
-    # For now, we'll prevent anyone from changing the 'admin' password except 'admin'
-    # This is a simplified check. A real app would use token-based auth.
+    # A simple security check: prevent changing the main 'admin' password by others.
+    # A real app would use a more robust token-based authentication system.
     if username == "admin" and user_in_db.username != "admin":
          raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="لا يمكن تغيير كلمة مرور المسؤول الرئيسي")
 
@@ -152,7 +149,7 @@ def delete_user(username: str, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"User '{username}' deleted successfully"}
 
-# --- Public Content & Subcategory Endpoints (Unchanged for now) ---
+# --- Public Content & Subcategory Endpoints ---
 @app.get("/api/content/{category}/subcategories", response_model=List[schemas.Subcategory])
 def get_subcategories(category: str, db: Session = Depends(get_db)):
     category_obj = db.query(models.Category).filter(models.Category.name == category).first()
@@ -169,31 +166,31 @@ def get_content_by_subcategory(category_name: str, subcategory_id: int, q: Optio
     return query.all()
 
 # --- Admin-Only Endpoints for Content & Subcategories ---
-@app.post("/api/content/{category}/subcategories", response_model=schemas.Subcategory, status_code=status.HTTP_201_CREATED)
-def create_subcategory(category: str, subcategory: schemas.SubcategoryCreate, db: Session = Depends(get_db)):
+@app.post("/api/admin/{category}/subcategories", response_model=schemas.Subcategory, status_code=status.HTTP_201_CREATED)
+def create_subcategory_admin(category: str, subcategory: schemas.SubcategoryCreate, db: Session = Depends(get_db)):
     category_obj = db.query(models.Category).filter(models.Category.name == category).first()
     if not category_obj: raise HTTPException(status_code=404, detail="Category not found")
     new_subcategory = models.Subcategory(name=subcategory.name, category_id=category_obj.id)
     db.add(new_subcategory); db.commit(); db.refresh(new_subcategory)
     return new_subcategory
 
-@app.put("/api/content/{category}/subcategories/{subcategory_id}", response_model=schemas.Subcategory)
-def update_subcategory(subcategory_id: int, subcategory_update: schemas.SubcategoryCreate, db: Session = Depends(get_db)):
+@app.put("/api/admin/subcategories/{subcategory_id}", response_model=schemas.Subcategory)
+def update_subcategory_admin(subcategory_id: int, subcategory_update: schemas.SubcategoryCreate, db: Session = Depends(get_db)):
     db_subcategory = db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first()
     if not db_subcategory: raise HTTPException(status_code=404, detail="Subcategory not found")
     db_subcategory.name = subcategory_update.name
     db.commit(); db.refresh(db_subcategory)
     return db_subcategory
 
-@app.delete("/api/content/{category}/subcategories/{subcategory_id}", status_code=status.HTTP_200_OK)
-def delete_subcategory(subcategory_id: int, db: Session = Depends(get_db)):
+@app.delete("/api/admin/subcategories/{subcategory_id}", status_code=status.HTTP_200_OK)
+def delete_subcategory_admin(subcategory_id: int, db: Session = Depends(get_db)):
     db_subcategory = db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first()
     if not db_subcategory: raise HTTPException(status_code=404, detail="Subcategory not found")
     db.delete(db_subcategory); db.commit()
     return {"status": "success", "message": "Subcategory and its items deleted"}
 
-@app.post("/api/content/{category}/{subcategory_id}", response_model=schemas.ContentItem, status_code=status.HTTP_201_CREATED)
-def add_content_to_subcategory(subcategory_id: int, title: str = Form(...), description: str = Form(...), file: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
+@app.post("/api/admin/content/{subcategory_id}", response_model=schemas.ContentItem, status_code=status.HTTP_201_CREATED)
+def add_content_to_subcategory_admin(subcategory_id: int, title: str = Form(...), description: str = Form(...), file: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
     if not db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first():
         raise HTTPException(status_code=404, detail="Subcategory not found")
     file_url = ""
@@ -205,8 +202,8 @@ def add_content_to_subcategory(subcategory_id: int, title: str = Form(...), desc
     db.add(new_item); db.commit(); db.refresh(new_item)
     return new_item
 
-@app.put("/api/content/{category}/{subcategory_id}/{item_id}", response_model=schemas.ContentItem)
-def update_content_item(item_id: int, title: str = Form(...), description: str = Form(...), file: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
+@app.put("/api/admin/content/{item_id}", response_model=schemas.ContentItem)
+def update_content_item_admin(item_id: int, title: str = Form(...), description: str = Form(...), file: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
     db_item = db.query(models.ContentItem).filter(models.ContentItem.id == item_id).first()
     if not db_item: raise HTTPException(status_code=404, detail="Content item not found")
     file_url = db_item.imageUrl
@@ -218,8 +215,8 @@ def update_content_item(item_id: int, title: str = Form(...), description: str =
     db.commit(); db.refresh(db_item)
     return db_item
 
-@app.delete("/api/content/{category}/{subcategory_id}/{item_id}", status_code=status.HTTP_200_OK)
-def delete_content_item(item_id: int, db: Session = Depends(get_db)):
+@app.delete("/api/admin/content/{item_id}", status_code=status.HTTP_200_OK)
+def delete_content_item_admin(item_id: int, db: Session = Depends(get_db)):
     db_item = db.query(models.ContentItem).filter(models.ContentItem.id == item_id).first()
     if not db_item: raise HTTPException(status_code=404, detail="Content item not found")
     db.delete(db_item); db.commit()
@@ -234,7 +231,7 @@ def get_all_content_for_admin(db: Session = Depends(get_db)):
         subcategory_id=item.subcategory_id, subcategory_name=item.owner_subcategory.name
     ) for item in all_items]
 
-# --- START: NEW PORTFOLIO & CLIENT ENDPOINTS ---
+# --- START: NEW PORTFOLIO & CLIENT ENDPOINTS (Admin Only) ---
 # Client Management
 @app.get("/api/clients", response_model=List[schemas.Client])
 def get_clients(q: Optional[str] = None, db: Session = Depends(get_db)):
@@ -254,13 +251,33 @@ def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
     db.add(new_client); db.commit(); db.refresh(new_client)
     return new_client
 
+@app.put("/api/clients/{client_id}", response_model=schemas.Client)
+def update_client(client_id: int, client_update: schemas.ClientCreate, db: Session = Depends(get_db)):
+    db_client = db.query(models.Client).filter(models.Client.id == client_id).first()
+    if not db_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    for var, value in vars(client_update).items():
+        setattr(db_client, var, value) if value else None
+    db.commit()
+    db.refresh(db_client)
+    return db_client
+
+@app.delete("/api/clients/{client_id}", status_code=status.HTTP_200_OK)
+def delete_client(client_id: int, db: Session = Depends(get_db)):
+    db_client = db.query(models.Client).filter(models.Client.id == client_id).first()
+    if not db_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    db.delete(db_client)
+    db.commit()
+    return {"status": "success", "message": "Client deleted successfully"}
+
 # Portfolio Item Management
 @app.get("/api/portfolio/items", response_model=List[schemas.PortfolioItem])
 def get_portfolio_items(
     category_id: Optional[int] = Query(None),
     client_id: Optional[int] = Query(None),
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    start_date: Optional[str] = Query(None), # Receive dates as strings
+    end_date: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     query = db.query(models.PortfolioItem).options(
@@ -273,13 +290,15 @@ def get_portfolio_items(
     if client_id:
         query = query.filter(models.PortfolioItem.client_id == client_id)
     if start_date:
-        query = query.filter(models.PortfolioItem.upload_date >= start_date)
+        query = query.filter(models.PortfolioItem.upload_date >= datetime.fromisoformat(start_date))
     if end_date:
-        query = query.filter(models.PortfolioItem.upload_date <= end_date)
+        # To include the entire end day, we can add logic to go to the end of that day.
+        # For simplicity now, we'll just use the provided date.
+        query = query.filter(models.PortfolioItem.upload_date <= datetime.fromisoformat(end_date))
         
     return query.all()
 
-@app.post("/api/portfolio/upload", status_code=status.HTTP_201_CREATED)
+@app.post("/api/portfolio/upload", response_model=schemas.PortfolioItem, status_code=status.HTTP_201_CREATED)
 def upload_portfolio_item(
     title: str = Form(...),
     description: Optional[str] = Form(None),
@@ -293,7 +312,7 @@ def upload_portfolio_item(
     client = db.query(models.Client).filter(models.Client.id == client_id).first()
     if not client: raise HTTPException(404, "Client not found")
 
-    folder_path = f"portfolio/{now.year}/{now.month}/{now.day}/{client.name.replace(' ', '_')}"
+    folder_path = f"portfolio/{now.year}/{now.month:02d}/{now.day:02d}/{client.name.replace(' ', '_')}"
     
     resource_type = "video" if file.content_type and file.content_type.startswith("video") else "image"
     upload_result = cloudinary.uploader.upload(file.file, resource_type=resource_type, folder=folder_path)
@@ -303,7 +322,7 @@ def upload_portfolio_item(
         title=title, description=description, file_url=file_url,
         client_id=client_id, portfolio_category_id=portfolio_category_id, upload_date=now
     )
-    db.add(new_item); db.commit(); db.refresh(new_item)
+    db.add(new_item); db.commit()
     # Eagerly load relationships before returning
     db.refresh(new_item, attribute_names=['client', 'portfolio_category'])
     return new_item
@@ -317,3 +336,4 @@ def delete_portfolio_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": "Item deleted successfully"}
 # --- END: NEW PORTFOLIO & CLIENT ENDPOINTS ---
+

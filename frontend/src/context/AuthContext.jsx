@@ -6,7 +6,7 @@ const AuthContext = createContext(null);
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // --- START: MODIFICATION ---
-// Define a default guest user object
+// Define a default guest user object for public access
 const guestUser = {
     username: 'Guest',
     role: 'public',
@@ -14,24 +14,25 @@ const guestUser = {
 };
 
 export const AuthProvider = ({ children }) => {
-    // Initialize with guestUser instead of null
+    // Initialize state with the guestUser object, not null
     const [user, setUser] = useState(guestUser);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // This effect runs once when the app starts
         try {
             const storedUser = localStorage.getItem('ratilUser');
             if (storedUser) {
-                // If there's a stored user, parse and set it
+                // If a user is found in storage, set them as the current user
                 setUser(JSON.parse(storedUser));
             } else {
-                // Otherwise, ensure it's the guest user
+                // Otherwise, ensure the state is the default guest user
                 setUser(guestUser);
             }
         } catch (error) {
             console.error("Failed to parse user from localStorage", error);
             localStorage.removeItem('ratilUser');
-            setUser(guestUser);
+            setUser(guestUser); // Fallback to guest user on error
         } finally {
             setLoading(false);
         }
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }) => {
             if (response.data && response.data.status === 'success') {
                 const userData = response.data.user;
                 localStorage.setItem('ratilUser', JSON.stringify(userData));
+                // This setUser call is what instantly updates the UI across the app
                 setUser(userData);
                 return userData;
             }
@@ -64,13 +66,14 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('ratilUser');
-        // On logout, revert to the guest user state
+        // On logout, revert to the guest user state, instantly updating the UI
         setUser(guestUser);
     };
     
-    // Add a helper to check if the user is a guest
+    // A helper function to easily check if the user is a guest
     const isGuest = user.role === 'public';
 
+    // The value provided to the context now includes the user state, login/logout functions, and the isGuest helper
     return (
         <AuthContext.Provider value={{ user, login, logout, loading, isGuest }}>
             {!loading && children}
@@ -82,3 +85,4 @@ export const useAuth = () => {
     return useContext(AuthContext);
 };
 // --- END: MODIFICATION ---
+

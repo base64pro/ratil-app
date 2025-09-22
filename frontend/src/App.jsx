@@ -20,18 +20,23 @@ function App() {
   };
 
   // --- START: MODIFICATION ---
-  // The login page is now a route, not the default for non-users.
-  // We check roles to protect the admin dashboard.
+  // The logic is now inverted. Instead of checking if a user exists,
+  // we allow access to all pages by default and specifically protect
+  // the admin and portfolio pages.
   const renderPage = () => {
-    // Protect admin-only pages
-    if (activePage === 'adminDashboard' && user.role !== 'admin') {
+    // Rule 1: Protect the Admin Dashboard. If the user is not an admin, show the home page.
+    if (activePage === 'adminDashboard' && (!user || user.role !== 'admin')) {
+      // Redirect to home if a non-admin tries to access the dashboard
       return <HomePage onNavigate={navigateTo} />;
     }
-     // Protect portfolio page based on user permission
-    if (activePage === 'portfolio' && (user.role !== 'admin' || !user.can_access_portfolio)) {
+    
+    // Rule 2: Protect the Portfolio. If the user is not an admin with portfolio access, show the home page.
+    if (activePage === 'portfolio' && (!user || user.role !== 'admin' || !user.can_access_portfolio)) {
+       // Redirect to home if not authorized for portfolio
       return <HomePage onNavigate={navigateTo} />;
     }
 
+    // If the rules above pass, render the requested page.
     switch (activePage) {
       case 'home':
         return <HomePage onNavigate={navigateTo} />;
@@ -43,11 +48,13 @@ function App() {
         return <EventsPage onNavigate={navigateTo} />;
       case 'exhibition':
         return <ExhibitionPage onNavigate={navigateTo} />;
-      case 'portfolio': // New portfolio page route
+      case 'portfolio': // New portfolio page route for authorized admins
         return <PortfolioPage onNavigate={navigateTo} />;
-      case 'login': // New login page route
+      case 'login': // The login page is now a specific route
+        // After successful login, AuthContext will update the user,
+        // and the HomePage will re-render with the correct admin buttons.
         return <LoginPage onLoginSuccess={() => navigateTo('home')} />;
-      case 'adminDashboard':
+      case 'adminDashboard': // Admin dashboard for authorized admins
         return <AdminDashboard onBack={() => navigateTo('home')} />;
       default:
         return <HomePage onNavigate={navigateTo} />;
@@ -59,3 +66,4 @@ function App() {
 }
 
 export default App;
+

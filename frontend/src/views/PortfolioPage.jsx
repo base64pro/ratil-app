@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import ParticleBackground from '../components/ParticleBackground';
@@ -74,6 +74,7 @@ function PortfolioPage({ onNavigate }) {
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
+                // Fetch data for the filter dropdowns
                 const [clientsRes, categoriesRes] = await Promise.all([
                     axios.get(`${API_BASE_URL}/api/clients`),
                     axios.get(`${API_BASE_URL}/api/content/portfolio/subcategories`)
@@ -85,12 +86,13 @@ function PortfolioPage({ onNavigate }) {
             }
         };
         fetchInitialData();
-        fetchItems(); // Initial fetch
+        fetchItems(); // Fetch all items on initial load
     }, []);
 
     const fetchItems = async () => {
         setLoading(true);
         try {
+            // Build query parameters from the filters state
             const params = {
                 category_id: filters.categoryId || undefined,
                 client_id: filters.clientId || undefined,
@@ -107,11 +109,13 @@ function PortfolioPage({ onNavigate }) {
         }
     };
     
+    // Update filter state on user input
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
+    // Trigger a new fetch when the search button is clicked
     const handleFilterSubmit = (e) => {
         e.preventDefault();
         fetchItems();
@@ -220,3 +224,4 @@ function PortfolioPage({ onNavigate }) {
 }
 
 export default PortfolioPage;
+

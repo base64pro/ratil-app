@@ -3,986 +3,528 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import ParticleBackground from '../components/ParticleBackground';
-import { useAuth } from '../context/AuthContext'; // Import useAuth to get current user
+import { useAuth } from '../context/AuthContext';
 
-// --- تم التعديل هنا ---
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-// Styles for the Admin Dashboard
+// --- START: PROFESSIONAL ADMIN DASHBOARD STYLES ---
 const AdminDashboardStyles = `
-  .page-container {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-    font-family: 'Ithra Bold', sans-serif !important;
-  }
+  :root { --admin-primary: #3b82f6; --admin-primary-dark: #2563eb; --admin-danger: #ef4444; --admin-danger-dark: #dc2626; --admin-success: #22c55e; --admin-success-dark: #16a34a; --admin-bg-light: rgba(255, 255, 255, 0.05); --admin-bg-dark: rgba(0, 0, 0, 0.2); --admin-border-color: rgba(255, 255, 255, 0.1); }
+  .page-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 2rem; position: relative; overflow: hidden; }
+  .page-header { width: 100%; max-width: 1600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; position: relative; z-index: 2; }
+  .page-title { font-size: 2.2rem; color: #ffffff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+  .back-button { padding: 10px 25px; font-size: 1rem; background: var(--admin-bg-light); border: 1px solid var(--admin-border-color); color: #ffffff; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+  .back-button:hover { background: rgba(255, 255, 255, 0.1); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
 
-  .page-header {
-    width: 100%;
-    max-width: 1400px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 2;
-  }
-
-  .page-title {
-    font-size: 2.5rem;
-    color: #ffffff;
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  }
-
-  .back-button {
-    padding: 10px 25px;
-    font-size: 1rem;
-    font-family: 'Ithra Bold', sans-serif !important;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #ffffff;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .back-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-  }
-
-  .page-content {
-    flex-grow: 1;
-    width: 100%;
-    max-width: 1400px;
-    background: rgba(15, 24, 37, 0.5);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    color: var(--text-secondary);
-    z-index: 2;
-    overflow-y: auto; 
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-  }
-
-  .dashboard-section {
-    width: 100%;
-  }
+  .page-content { flex-grow: 1; width: 100%; max-width: 1600px; background: rgba(15, 24, 37, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 15px; border: 1px solid var(--admin-border-color); z-index: 2; overflow: hidden; display: flex; flex-direction: column; }
   
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
+  .dashboard-layout { display: flex; height: 100%; }
+  .tabs-nav { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; background: rgba(0,0,0,0.15); border-left: 1px solid var(--admin-border-color); }
+  .tab-button { width: 100%; padding: 12px 20px; font-size: 1rem; text-align: right; border: none; background: transparent; color: #b8c5d6; border-radius: 8px; cursor: pointer; transition: all 0.2s ease-in-out; border-right: 3px solid transparent; }
+  .tab-button.active { color: #ffffff; background: var(--admin-bg-light); border-right-color: var(--admin-primary); }
+  .tab-button:hover:not(.active) { background: rgba(255, 255, 255, 0.03); color: #ffffff; }
 
-  .section-title {
-    font-size: 1.5rem;
-    color: #ffffff;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    flex-grow: 1;
-  }
+  .tab-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
+  .dashboard-section { margin-bottom: 2.5rem; }
+  .section-title { font-size: 1.5rem; color: #ffffff; padding-bottom: 0.75rem; border-bottom: 1px solid var(--admin-border-color); margin-bottom: 1.5rem; }
   
-  .admin-search-bar {
-    max-width: 300px;
-  }
+  .form-row, .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+  .form-input-group { display: flex; flex-direction: column; gap: 0.5rem; position: relative; }
+  .form-label { font-size: 0.9rem; }
+  .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; font-size: 1rem; background-color: var(--admin-bg-dark); border: 1px solid var(--admin-border-color); border-radius: 8px; color: #ffffff; transition: all 0.3s ease; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--admin-primary); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
+  .form-textarea { min-height: 100px; resize: vertical; }
 
-  .create-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding-bottom: 2rem;
-  }
-  
-  .form-row {
-    display: flex;
-    gap: 1.5rem;
-  }
+  .form-button { padding: 12px 30px; font-size: 1rem; color: #ffffff; background: var(--admin-primary); border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+  .form-button:hover:not(:disabled) { background: var(--admin-primary-dark); }
+  .form-button.danger { background: var(--admin-danger); }
+  .form-button.danger:hover { background: var(--admin-danger-dark); }
+  .form-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .form-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    flex-grow: 1;
-    position: relative;
-  }
-
-  .form-label {
-    font-size: 0.9rem;
-  }
-
-  .form-input, .form-select, .form-textarea, .form-file-input {
-    padding: 10px 12px;
-    font-size: 1rem;
-    font-family: 'Ithra Bold', sans-serif !important;
-    background-color: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #ffffff;
-    transition: all 0.3s ease;
-  }
-
-  input[type="password"] {
-    padding-left: 40px;
-  }
-  
-  .form-select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: left 0.75rem center;
-    background-size: 16px 12px;
-    padding-left: 2.5rem; 
-  }
-  
-  .form-file-input::-webkit-file-upload-button {
-    background: var(--navy-light);
-    border: none;
-    color: #ffffff;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-right: 10px;
-  }
-
-  .form-textarea {
-    min-height: 80px;
-    resize: vertical;
-  }
-  
-  .form-input:focus, .form-select:focus, .form-textarea:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-  }
-
-  .form-button {
-    padding: 12px 30px;
-    font-size: 1rem;
-    font-family: 'Ithra Bold', sans-serif !important;
-    color: #ffffff;
-    background: var(--navy-light);
-    border: 1px solid var(--navy-glow);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    align-self: flex-start;
-  }
-
-  .form-button:hover:not(:disabled) {
-    background: var(--navy-blue);
-  }
-
-  .form-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .password-toggle-icon {
-    position: absolute;
-    top: 50%;
-    left: 12px;
-    transform: translateY(25%);
-    cursor: pointer;
-    color: #8892b0;
-    transition: color 0.3s ease;
-  }
-
-  .password-toggle-icon:hover {
-    color: #ffffff;
-  }
-
-  .progress-bar-container {
-    width: 100%;
-    height: 10px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-  }
-
-  .progress-bar {
-    width: 0%;
-    height: 100%;
-    background: linear-gradient(90deg, var(--navy-light), var(--navy-blue));
-    border-radius: 5px;
-    transition: width 0.3s ease-in-out;
-  }
-
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-    color: #ffffff;
-  }
-
-  .data-table th, .data-table td {
-    padding: 12px 15px;
-    text-align: right;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .data-table thead th {
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  
-  .data-table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-  
-  .action-button {
-    padding: 5px 15px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-left: 0.5rem;
-    border: 1px solid transparent;
-  }
-
+  .data-table { width: 100%; border-collapse: collapse; color: #ffffff; }
+  .data-table th, .data-table td { padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--admin-border-color); }
+  .data-table thead th { font-size: 1.1rem; }
+  .data-table tbody tr:hover { background-color: var(--admin-bg-light); }
+  .action-button { padding: 5px 15px; font-size: 0.9rem; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; margin-left: 0.5rem; border: 1px solid transparent; }
   .edit-button { background-color: rgba(50, 173, 230, 0.2); border-color: rgba(50, 173, 230, 0.5); color: #87ceeb; }
   .edit-button:hover { background-color: rgba(50, 173, 230, 0.5); color: #ffffff; }
   .delete-button { background-color: rgba(255, 59, 48, 0.2); border-color: rgba(255, 59, 48, 0.5); color: #ff8a8a; }
   .delete-button:hover { background-color: rgba(255, 59, 48, 0.5); color: #ffffff; }
-  .delete-button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .loading-text, .error-text {
-    text-align: center;
-    padding: 1rem;
-    font-size: 1rem;
-  }
   
+  .checkbox-group { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+  .checkbox-group label { cursor: pointer; }
+
   .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .modal-content { background: #0f1825; padding: 2rem; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 90%; max-width: 600px; }
   .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
 
-  .file-input-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
 
-  .camera-button {
-    padding: 10px 15px;
-    font-size: 0.9rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #ffffff;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-  }
-  .camera-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .camera-modal-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    max-width: 90vw;
-  }
-
-  .camera-feed, .camera-preview {
-    width: 100%;
-    max-width: 500px;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  @media (max-width: 768px) {
-    .page-container { padding: 1rem; }
-    .page-header { flex-direction: column; gap: 1rem; text-align: center; }
-    .page-title { font-size: 1.8rem; }
-    .data-table th, .data-table td { padding: 10px 8px; font-size: 0.9rem; }
-    .form-row, .create-form, .file-input-container { flex-direction: column; align-items: stretch; }
+  @media (max-width: 992px) {
+    .dashboard-layout { flex-direction: column; }
+    .tabs-nav { flex-direction: row; border-left: none; border-bottom: 1px solid var(--admin-border-color); overflow-x: auto; }
+    .tab-button { border-right: none; border-bottom: 3px solid transparent; }
+    .tab-button.active { border-bottom-color: var(--admin-primary); }
   }
 `;
 
+// Helper component for consistent section layout
+const Section = ({ title, children }) => (
+    <motion.div
+        className="dashboard-section"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+    >
+        <h2 className="section-title">{title}</h2>
+        {children}
+    </motion.div>
+);
+
 function AdminDashboard({ onBack }) {
-  const { user } = useAuth();
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('portfolio');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-  // User Management State
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [userError, setUserError] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showNewUserPass, setShowNewUserPass] = useState(false);
+    // State slices for different managers
+    const [users, setUsers] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [publicContent, setPublicContent] = useState([]);
+    const [portfolioItems, setPortfolioItems] = useState([]);
+    const [publicSubcategories, setPublicSubcategories] = useState({}); // { printedMaterials: [], billboards: [] }
+    const [portfolioSubcategories, setPortfolioSubcategories] = useState([]);
 
-  // Password Change State
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newAdminPassword, setNewAdminPassword] = useState('');
-  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
-  const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewAdminPass, setShowNewAdminPass] = useState(false);
-  const [showConfirmAdminPass, setShowConfirmAdminPass] = useState(false);
-
-  // Content Management State
-  const [allContent, setAllContent] = useState([]);
-  const [loadingContent, setLoadingContent] = useState(true);
-  const [contentError, setContentError] = useState('');
-  const [contentCategory, setContentCategory] = useState('printedMaterials');
-  const [subcategories, setSubcategories] = useState([]);
-  const [contentSubcategory, setContentSubcategory] = useState('');
-  const [newSubcategoryName, setNewSubcategoryName] = useState('');
-  const [contentTitle, setContentTitle] = useState('');
-  const [contentDesc, setContentDesc] = useState('');
-  const [contentFile, setContentFile] = useState(null);
-  
-  // Search State
-  const [contentSearchTerm, setContentSearchTerm] = useState('');
-  
-  // Edit Modal State
-  const [editingItem, setEditingItem] = useState(null);
-  const [editingFile, setEditingFile] = useState(null);
-  const [editingSubcategory, setEditingSubcategory] = useState(null);
-
-  // Upload Progress State
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-
-  // Camera State
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraStream, setCameraStream] = useState(null);
-  const [capturedImage, setCapturedImage] = useState(null);
-
-  const fetchAllData = async () => {
-    setLoadingUsers(true);
-    setLoadingContent(true);
-    try {
-      const [userResponse, contentResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/users`),
-        axios.get(`${API_BASE_URL}/api/admin/content`)
-      ]);
-      setUsers(userResponse.data);
-      setAllContent(contentResponse.data);
-      setUserError('');
-      setContentError('');
-    } catch (err) {
-      console.error("Failed to fetch data:", err);
-      const errorMsg = 'فشل في جلب البيانات.';
-      setUserError(errorMsg);
-      setContentError(errorMsg);
-    } finally {
-      setLoadingUsers(false);
-      setLoadingContent(false);
-    }
-  };
-  
-  const fetchSubcategories = async (category) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/content/${category}/subcategories`);
-      setSubcategories(response.data);
-      if (response.data.length > 0) {
-        if (!contentSubcategory || !response.data.some(sub => sub.id.toString() === contentSubcategory)) {
-          setContentSubcategory(response.data[0].id.toString());
-        }
-      } else {
-        setContentSubcategory('');
-      }
-    } catch (err) {
-      console.error("Failed to fetch subcategories:", err);
-      setSubcategories([]);
-      setContentSubcategory('');
-    }
-  };
-
-  useEffect(() => {
-    fetchAllData();
-    fetchSubcategories(contentCategory);
-  }, []);
-
-  useEffect(() => {
-    fetchSubcategories(contentCategory);
-  }, [contentCategory]);
-
-  const handleCreateUser = async (event) => {
-    event.preventDefault();
-    if (!newUsername || !newPassword) {
-      Swal.fire({ title: 'حقول فارغة', text: 'الرجاء ملء حقول المستخدم', icon: 'warning' });
-      return;
-    }
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/users`, { username: newUsername, password: newPassword });
-      Swal.fire({ title: 'نجاح!', text: `تم إنشاء المستخدم "${response.data.username}" بنجاح!`, icon: 'success' });
-      setNewUsername(''); setNewPassword('');
-      fetchAllData();
-    } catch (err) {
-      const detail = err.response?.data?.detail || 'حدث خطأ أثناء إنشاء المستخدم.';
-      Swal.fire({ title: 'خطأ!', text: detail, icon: 'error' });
-    }
-  };
-
-  const handleDeleteUser = (username) => {
-    Swal.fire({
-      title: `هل أنت متأكد؟`,
-      text: `سيتم حذف المستخدم "${username}" بشكل نهائي!`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'نعم، قم بالحذف!',
-      cancelButtonText: 'إلغاء'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
+    // Fetches all data needed for the dashboard in one go
+    const fetchAllData = async () => {
+        setLoading(true);
         try {
-          const response = await axios.delete(`${API_BASE_URL}/api/users/${username}`);
-          Swal.fire('تم الحذف!', response.data.message, 'success');
-          fetchAllData();
-        } catch (err) {
-          const detail = err.response?.data?.detail || 'حدث خطأ أثناء حذف المستخدم.';
-          Swal.fire('خطأ!', detail, 'error');
-        }
-      }
-    });
-  };
-  
-  const handleAddContent = async (event) => {
-    event.preventDefault();
-    if (!contentTitle || !contentDesc || !contentSubcategory) {
-        Swal.fire({ title: 'بيانات ناقصة', text: 'الرجاء ملء حقلي العنوان والوصف واختيار قسم فرعي', icon: 'warning' });
-        return;
-    }
-    const formData = new FormData();
-    formData.append('title', contentTitle);
-    formData.append('description', contentDesc);
-    if (contentFile) { formData.append('file', contentFile); }
-    const axiosConfig = { headers: { 'Content-Type': 'multipart/form-data' }, onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / e.total)) };
-    setIsUploading(true);
-    try {
-        const response = await axios.post(`${API_BASE_URL}/api/content/${contentCategory}/${contentSubcategory}`, formData, axiosConfig);
-        Swal.fire({ title: 'نجاح!', text: `تمت إضافة "${response.data.title}" بنجاح.`, icon: 'success' });
-        setContentTitle(''); setContentDesc(''); setContentFile(null); event.target.reset();
-        fetchAllData();
-    } catch (err) {
-        const detail = err.response?.data?.detail || 'حدث خطأ أثناء إضافة المحتوى.';
-        Swal.fire({ title: 'خطأ!', text: detail, icon: 'error' });
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
+            const [
+                usersRes, clientsRes, publicContentRes, portfolioItemsRes,
+                printedMaterialsRes, billboardsRes, eventsRes, exhibitionRes, portfolioCatRes
+            ] = await Promise.all([
+                axios.get(`${API_BASE_URL}/api/users`),
+                axios.get(`${API_BASE_URL}/api/clients`),
+                axios.get(`${API_BASE_URL}/api/admin/content`),
+                axios.get(`${API_BASE_URL}/api/portfolio/items`),
+                axios.get(`${API_BASE_URL}/api/content/printedMaterials/subcategories`),
+                axios.get(`${API_BASE_URL}/api/content/billboards/subcategories`),
+                axios.get(`${API_BASE_URL}/api/content/events/subcategories`),
+                axios.get(`${API_BASE_URL}/api/content/exhibition/subcategories`),
+                axios.get(`${API_BASE_URL}/api/content/portfolio/subcategories`),
+            ]);
 
-  const handleDeleteContent = (category, subcategory_id, itemId, itemTitle) => {
-    Swal.fire({
-      title: 'هل أنت متأكد؟',
-      text: `سيتم حذف العنصر "${itemTitle}" بشكل نهائي!`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'نعم، قم بالحذف!',
-      cancelButtonText: 'إلغاء'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const response = await axios.delete(`${API_BASE_URL}/api/content/${category}/${subcategory_id}/${itemId}`);
-          Swal.fire('تم الحذف!', response.data.message, 'success');
-          fetchAllData();
+            setUsers(usersRes.data);
+            setClients(clientsRes.data);
+            setPublicContent(publicContentRes.data);
+            setPortfolioItems(portfolioItemsRes.data);
+            setPublicSubcategories({
+                printedMaterials: printedMaterialsRes.data,
+                billboards: billboardsRes.data,
+                events: eventsRes.data,
+                exhibition: exhibitionRes.data,
+            });
+            setPortfolioSubcategories(portfolioCatRes.data);
+            setError('');
         } catch (err) {
-          const detail = err.response?.data?.detail || 'حدث خطأ أثناء حذف المحتوى.';
-          Swal.fire('خطأ!', detail, 'error');
-        }
-      }
-    });
-  };
-  
-  const handleUpdateContent = async (event) => {
-    event.preventDefault();
-    if (!editingItem) return;
-
-    const formData = new FormData();
-    formData.append('title', editingItem.title);
-    formData.append('description', editingItem.description);
-    if (editingFile) {
-      formData.append('file', editingFile);
-    }
-    
-    const axiosConfig = {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
+            console.error("Failed to fetch dashboard data:", err);
+            setError('فشل في جلب بيانات لوحة التحكم.');
+        } finally {
+            setLoading(false);
         }
     };
 
-    setIsUploading(true);
-    try {
-        const { category, subcategory_id, id } = editingItem;
-        const response = await axios.put(`${API_BASE_URL}/api/content/${category}/${subcategory_id}/${id}`, formData, axiosConfig);
-        Swal.fire({ title: 'نجاح!', text: `تم تحديث "${response.data.title}" بنجاح.`, icon: 'success' });
-        setEditingItem(null); setEditingFile(null);
+    useEffect(() => {
         fetchAllData();
-    } catch (err) {
-        const detail = err.response?.data?.detail || 'حدث خطأ أثناء تحديث المحتوى.';
-        Swal.fire({ title: 'خطأ!', text: detail, icon: 'error' });
-    } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-    }
-  };
-  
-  const handleCreateSubcategory = async (event) => {
-    event.preventDefault();
-    if (!newSubcategoryName.trim()) {
-      Swal.fire({ title: 'حقل فارغ', text: 'اسم القسم الفرعي لا يمكن أن يكون فارغًا', icon: 'warning' });
-      return;
-    }
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/content/${contentCategory}/subcategories`, { name: newSubcategoryName });
-      Swal.fire({ title: 'نجاح!', text: `تم إنشاء القسم الفرعي "${response.data.name}" بنجاح.`, icon: 'success' });
-      setNewSubcategoryName('');
-      fetchSubcategories(contentCategory);
-    } catch (err) {
-      const detail = err.response?.data?.detail || 'حدث خطأ أثناء إنشاء القسم الفرعي.';
-      Swal.fire({ title: 'خطأ!', text: detail, icon: 'error' });
-    }
-  };
-  
-  const openSubcategoryEditModal = (subcategory) => {
-    setEditingSubcategory({ ...subcategory });
-  };
-  
-  const handleUpdateSubcategory = async (event) => {
-    event.preventDefault();
-    if (!editingSubcategory || !editingSubcategory.name.trim()) {
-        Swal.fire({ title: 'حقل فارغ', text: 'اسم القسم الفرعي لا يمكن أن يكون فارغًا.', icon: 'warning'});
-        return;
-    }
-    try {
-        const { id, name } = editingSubcategory;
-        const response = await axios.put(`${API_BASE_URL}/api/content/${contentCategory}/subcategories/${id}`, { name });
-        Swal.fire('نجاح!', `تم تحديث القسم الفرعي إلى "${response.data.name}".`, 'success');
-        setEditingSubcategory(null);
-        fetchSubcategories(contentCategory);
-    } catch (err) {
-        const detail = err.response?.data?.detail || 'حدث خطأ أثناء تحديث القسم.';
-        Swal.fire('خطأ!', detail, 'error');
-    }
-  };
-  
-  const handleDeleteSubcategory = (subcategory) => {
-    Swal.fire({
-      title: `هل أنت متأكد؟`,
-      text: `سيتم حذف القسم الفرعي "${subcategory.name}" وكل المحتوى الذي بداخله بشكل نهائي!`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'نعم، قم بالحذف!',
-      cancelButtonText: 'إلغاء',
-      confirmButtonColor: '#d33',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const response = await axios.delete(`${API_BASE_URL}/api/content/${contentCategory}/subcategories/${subcategory.id}`);
-          Swal.fire('تم الحذف!', response.data.message, 'success');
-          fetchSubcategories(contentCategory);
-          fetchAllData();
-        } catch (err) {
-          const detail = err.response?.data?.detail || 'حدث خطأ أثناء الحذف.';
-          Swal.fire('خطأ!', detail, 'error');
-        }
-      }
-    });
-  };
+    }, []);
 
-  const openEditModal = (item) => {
-    setEditingItem({ ...item });
-  };
-
-  const filteredContent = useMemo(() => {
-    if (!contentSearchTerm) {
-      return allContent;
-    }
-    const lowercasedFilter = contentSearchTerm.toLowerCase();
-    return allContent.filter(item =>
-      item.title.toLowerCase().includes(lowercasedFilter) ||
-      item.subcategory_name.toLowerCase().includes(lowercasedFilter)
+    const TabButton = ({ tabId, children }) => (
+        <button
+            className={`tab-button ${activeTab === tabId ? 'active' : ''}`}
+            onClick={() => setActiveTab(tabId)}
+        >
+            {children}
+        </button>
     );
-  }, [allContent, contentSearchTerm]);
 
-  const openCamera = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      Swal.fire('خطأ', 'متصفحك لا يدعم الوصول إلى الكاميرا.', 'error');
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      setCameraStream(stream);
-      setIsCameraOpen(true);
-    } catch (err) {
-      console.error("Camera access denied:", err);
-      Swal.fire('خطأ في الوصول', 'تم رفض الوصول إلى الكاميرا. يرجى التحقق من أذونات المتصفح.', 'error');
-    }
-  };
-
-  useEffect(() => {
-    if (isCameraOpen && cameraStream && videoRef.current) {
-      videoRef.current.srcObject = cameraStream;
-    }
-  }, [isCameraOpen, cameraStream]);
-
-  const closeCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-    }
-    setIsCameraOpen(false);
-    setCameraStream(null);
-    setCapturedImage(null);
-  };
-
-  const takePicture = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (video && canvas) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-      setCapturedImage(canvas.toDataURL('image/png'));
-    }
-  };
-
-  const confirmCapture = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.toBlob((blob) => {
-        const capturedFile = new File([blob], `capture-${Date.now()}.png`, { type: 'image/png' });
-        setContentFile(capturedFile);
-        closeCamera();
-      }, 'image/png');
-    }
-  };
-  
-  const retakePicture = () => {
-    setCapturedImage(null);
-  };
-  
-  // --- START: New Handler for Changing Password ---
-  const handleChangePassword = async (event) => {
-    event.preventDefault();
-    if (!currentPassword || !newAdminPassword || !confirmAdminPassword) {
-      Swal.fire({ title: 'حقول فارغة', text: 'الرجاء ملء جميع حقول كلمة المرور.', icon: 'warning' });
-      return;
-    }
-    if (newAdminPassword !== confirmAdminPassword) {
-      Swal.fire({ title: 'خطأ', text: 'كلمة المرور الجديدة وتأكيدها غير متطابقين.', icon: 'error' });
-      return;
-    }
-
-    try {
-      const response = await axios.put(`${API_BASE_URL}/api/users/${user.username}/change-password`, {
-        current_password: currentPassword,
-        new_password: newAdminPassword
-      });
-      Swal.fire({ title: 'نجاح!', text: response.data.message, icon: 'success' });
-      // Clear fields on success
-      setCurrentPassword('');
-      setNewAdminPassword('');
-      setConfirmAdminPassword('');
-    } catch (err) {
-      const detail = err.response?.data?.detail || 'حدث خطأ أثناء تغيير كلمة المرور.';
-      Swal.fire({ title: 'خطأ!', text: detail, icon: 'error' });
-    }
-  };
-  // --- END: New Handler for Changing Password ---
-  
-  // Helper for password toggle icon
-  const PasswordToggleIcon = ({ isVisible, onToggle }) => (
-    <span className="password-toggle-icon" onClick={onToggle}>
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {isVisible ? (
-          <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></>
-        ) : (
-           <><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></>
-        )}
-      </svg>
-    </span>
-  );
-
-  return (
-    <>
-      <style>{AdminDashboardStyles}</style>
-      <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
-        <ParticleBackground />
-        <div className="page-header"><h1 className="page-title">لوحة تحكم الأدمن</h1><button className="back-button" onClick={onBack}>→ رجوع</button></div>
-        <div className="page-content">
-          
-          <div className="dashboard-section">
-            <h2 className="section-title">إدارة الأقسام الفرعية</h2>
-            <form onSubmit={handleCreateSubcategory} className="create-form">
-              <div className="form-row">
-                <div className="form-input-group">
-                  <label className="form-label" htmlFor="new-subcategory-name">اسم القسم الفرعي الجديد</label>
-                  <input id="new-subcategory-name" type="text" className="form-input" value={newSubcategoryName} onChange={(e) => setNewSubcategoryName(e.target.value)} placeholder="مثال: طباعة داخلية" />
+    return (
+        <>
+            <style>{AdminDashboardStyles}</style>
+            <motion.div className="page-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <ParticleBackground />
+                <div className="page-header">
+                    <h1 className="page-title">لوحة التحكم</h1>
+                    <button className="back-button" onClick={onBack}>→ القائمة الرئيسية</button>
                 </div>
-                <div className="form-input-group" style={{ justifyContent: 'flex-end' }}>
-                   <button type="submit" className="form-button">إنشاء قسم فرعي</button>
-                </div>
-              </div>
-            </form>
-            <table className="data-table">
-              <thead><tr><th>اسم القسم الفرعي</th><th>إجراءات</th></tr></thead>
-              <tbody>
-                {subcategories.map(sub => (
-                  <tr key={sub.id}>
-                    <td>{sub.name}</td>
-                    <td>
-                      <button className="action-button edit-button" onClick={() => openSubcategoryEditModal(sub)}>تعديل</button>
-                      <button className="action-button delete-button" onClick={() => handleDeleteSubcategory(sub)}>حذف</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="dashboard-section">
-            <h2 className="section-title">إضافة محتوى جديد</h2>
-            <form onSubmit={handleAddContent} className="create-form">
-              <div className="form-row">
-                <div className="form-input-group">
-                  <label className="form-label" htmlFor="content-category">اختر القسم الرئيسي</label>
-                  <select id="content-category" className="form-select" value={contentCategory} onChange={e => setContentCategory(e.target.value)}>
-                    <option value="printedMaterials">المواد المطبوعة</option>
-                      <option value="billboards">تاجير لافتات طرقية عملاقة</option>
-                      <option value="events">تنظيم المؤتمرات والمناسبات</option>
-                      <option value="exhibition">معرض بيع الاجهزة والمعدات الطباعية</option>
-                  </select>
-                </div>
-                <div className="form-input-group">
-                  <label className="form-label" htmlFor="content-subcategory">اختر القسم الفرعي</label>
-                  <select id="content-subcategory" className="form-select" value={contentSubcategory} onChange={e => setContentSubcategory(e.target.value)} disabled={subcategories.length === 0}>
-                    {subcategories.length > 0 ? (
-                      subcategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)
+                <div className="page-content">
+                    {loading ? (
+                        <p>جاري تحميل البيانات...</p>
+                    ) : error ? (
+                        <p style={{ color: 'red' }}>{error}</p>
                     ) : (
-                      <option>الرجاء إنشاء قسم فرعي أولاً</option>
-                    )}
-                  </select>
-                </div>
-              </div>
-              <div className="form-input-group">
-                <label className="form-label" htmlFor="content-title">العنوان</label>
-                <input id="content-title" type="text" className="form-input" value={contentTitle} onChange={e => setContentTitle(e.target.value)} placeholder="عنوان العنصر" />
-              </div>
-              <div className="form-input-group">
-                <label className="form-label" htmlFor="content-desc">الوصف</label>
-                <textarea id="content-desc" className="form-textarea" value={contentDesc} onChange={e => setContentDesc(e.target.value)} placeholder="وصف موجز للعنصر"></textarea>
-              </div>
-              <div className="form-input-group">
-                <label className="form-label" htmlFor="content-file">ملف الصورة أو الفيديو (اختياري)</label>
-                <div className="file-input-container">
-                    <input id="content-file" type="file" className="form-file-input" onChange={e => setContentFile(e.target.files[0])} />
-                    <button type="button" className="camera-button" onClick={openCamera}>التقاط صورة</button>
-                </div>
-                {contentFile && <p style={{fontSize: '0.8rem', marginTop: '5px'}}>الملف المختار: {contentFile.name}</p>}
-                {isUploading && (
-                  <div className="progress-bar-container">
-                    <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
-                  </div>
-                )}
-              </div>
-              <button type="submit" className="form-button" disabled={isUploading}>
-                {isUploading ? `جارِ الرفع... ${uploadProgress}%` : 'إضافة المحتوى'}
-              </button>
-            </form>
-          </div>
-
-          <div className="dashboard-section">
-            <div className="section-header">
-              <h2 className="section-title">إدارة المحتوى الحالي</h2>
-              <div className="admin-search-bar">
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="...ابحث عن عنصر" 
-                  value={contentSearchTerm}
-                  onChange={(e) => setContentSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            {loadingContent ? <p className="loading-text">جاري تحميل المحتوى...</p> : contentError ? <p className="error-text">{contentError}</p> : (
-              <table className="data-table">
-                <thead><tr><th>العنوان</th><th>القسم الفرعي</th><th>إجراءات</th></tr></thead>
-                <tbody>
-                  {filteredContent.map(item => (
-                    <tr key={`${item.category}-${item.id}`}>
-                      <td>{item.title}</td>
-                      <td>{item.subcategory_name}</td>
-                      <td>
-                        <button className="action-button edit-button" onClick={() => openEditModal(item)}>تعديل</button>
-                        <button 
-                          className="action-button delete-button" 
-                          onClick={() => handleDeleteContent(item.category, item.subcategory_id, item.id, item.title)}
-                        >
-                          حذف
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          <div className="dashboard-section">
-            <h2 className="section-title">إدارة المستخدمين</h2>
-            <form onSubmit={handleCreateUser} className="create-form">
-                <div className="form-row">
-                    <div className="form-input-group">
-                        <label className="form-label" htmlFor="new-username">اسم المستخدم الجديد</label>
-                        <input id="new-username" type="text" className="form-input" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="اسم المستخدم" />
-                    </div>
-                    <div className="form-input-group">
-                        <label className="form-label" htmlFor="new-password">كلمة المرور</label>
-                        <input id="new-password" type={showNewUserPass ? 'text' : 'password'} className="form-input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="كلمة المرور" />
-                        <PasswordToggleIcon isVisible={showNewUserPass} onToggle={() => setShowNewUserPass(!showNewUserPass)} />
-                    </div>
-                </div>
-                <button type="submit" className="form-button">إنشاء مستخدم</button>
-            </form>
-            
-            {loadingUsers ? <p className="loading-text">جاري تحميل المستخدمين...</p> : userError ? <p className="error-text">{userError}</p> : (
-              <table className="data-table">
-                <thead><tr><th>اسم المستخدم</th><th>الدور</th><th>إجراء</th></tr></thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.username}>
-                      <td>{user.username}</td><td>{user.role}</td>
-                      <td><button className="delete-button" onClick={() => handleDeleteUser(user.username)} disabled={user.username === 'admin'}>حذف</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          <div className="dashboard-section">
-            <h2 className="section-title">تغيير كلمة المرور</h2>
-            <form onSubmit={handleChangePassword} className="create-form">
-              <div className="form-input-group">
-                <label className="form-label" htmlFor="current-password">كلمة المرور الحالية</label>
-                <input id="current-password" type={showCurrentPass ? 'text' : 'password'} className="form-input" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="أدخل كلمة المرور الحالية" />
-                <PasswordToggleIcon isVisible={showCurrentPass} onToggle={() => setShowCurrentPass(!showCurrentPass)} />
-              </div>
-              <div className="form-row">
-                <div className="form-input-group">
-                  <label className="form-label" htmlFor="new-admin-password">كلمة المرور الجديدة</label>
-                  <input id="new-admin-password" type={showNewAdminPass ? 'text' : 'password'} className="form-input" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="أدخل كلمة المرور الجديدة" />
-                  <PasswordToggleIcon isVisible={showNewAdminPass} onToggle={() => setShowNewAdminPass(!showNewAdminPass)} />
-                </div>
-                <div className="form-input-group">
-                  <label className="form-label" htmlFor="confirm-admin-password">تأكيد كلمة المرور الجديدة</label>
-                  <input id="confirm-admin-password" type={showConfirmAdminPass ? 'text' : 'password'} className="form-input" value={confirmAdminPassword} onChange={(e) => setConfirmAdminPassword(e.target.value)} placeholder="أعد إدخال كلمة المرور الجديدة" />
-                  <PasswordToggleIcon isVisible={showConfirmAdminPass} onToggle={() => setShowConfirmAdminPass(!showConfirmAdminPass)} />
-                </div>
-              </div>
-              <button type="submit" className="form-button">حفظ كلمة المرور</button>
-            </form>
-          </div>
-
-        </div>
-
-        <AnimatePresence>
-            {isCameraOpen && (
-            <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeCamera}>
-                <motion.div className="modal-content camera-modal-content" initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} onClick={e => e.stopPropagation()}>
-                <h2 className="section-title">التقاط صورة</h2>
-                {capturedImage ? (
-                    <img src={capturedImage} alt="Captured Preview" className="camera-preview" />
-                ) : (
-                    <video ref={videoRef} autoPlay playsInline className="camera-feed" />
-                )}
-                <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-                <div className="modal-actions">
-                    <button type="button" className="action-button" onClick={closeCamera}>إغلاق</button>
-                    {capturedImage ? (
-                    <>
-                        <button type="button" className="action-button edit-button" onClick={retakePicture}>إعادة الالتقاط</button>
-                        <button type="button" className="form-button" onClick={confirmCapture}>تأكيد الصورة</button>
-                    </>
-                     ) : (
-                    <button type="button" className="form-button" onClick={takePicture}>التقاط</button>
+                        <div className="dashboard-layout">
+                            <nav className="tabs-nav">
+                                <TabButton tabId="portfolio">المحفظة الرقمية</TabButton>
+                                <TabButton tabId="content">المحتوى العام</TabButton>
+                                <TabButton tabId="system">إدارة النظام</TabButton>
+                            </nav>
+                            <main className="tab-content">
+                                {activeTab === 'portfolio' && <PortfolioManager clients={clients} categories={portfolioSubcategories} items={portfolioItems} onUpdate={fetchAllData} />}
+                                {activeTab === 'content' && <PublicContentManager categoriesMap={publicSubcategories} items={publicContent} onUpdate={fetchAllData} />}
+                                {activeTab === 'system' && <SystemManager currentUser={user} users={users} onUpdate={fetchAllData} />}
+                            </main>
+                        </div>
                     )}
                 </div>
-                </motion.div>
             </motion.div>
-            )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {editingSubcategory && (
-            <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <motion.div className="modal-content" initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}>
-                <h2 className="section-title">تعديل القسم الفرعي</h2>
-                <form onSubmit={handleUpdateSubcategory} className="create-form">
-                  <div className="form-input-group">
-                    <label className="form-label">اسم القسم الفرعي</label>
-                    <input type="text" className="form-input" value={editingSubcategory.name} onChange={e => setEditingSubcategory({...editingSubcategory, name: e.target.value})} />
-                  </div>
-                  <div className="modal-actions">
-                    <button type="button" className="action-button" onClick={() => setEditingSubcategory(null)}>إلغاء</button>
-                    <button type="submit" className="form-button">حفظ التغييرات</button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {editingItem && (
-            <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <motion.div className="modal-content" initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}>
-                <h2 className="section-title">تعديل العنصر</h2>
-                <form onSubmit={handleUpdateContent} className="create-form">
-                  <div className="form-input-group">
-                    <label className="form-label">العنوان</label>
-                    <input type="text" className="form-input" value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} />
-                  </div>
-                  <div className="form-input-group">
-                    <label className="form-label">الوصف</label>
-                    <textarea className="form-textarea" value={editingItem.description} onChange={e => setEditingItem({...editingItem, description: e.target.value})}></textarea>
-                  </div>
-                  <div className="form-input-group">
-                    <label className="form-label">رفع ملف جديد (اختياري)</label>
-                    <input type="file" className="form-file-input" onChange={e => setEditingFile(e.target.files[0])} />
-                    {isUploading && (
-                      <div className="progress-bar-container">
-                        <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="modal-actions">
-                    <button type="button" className="action-button" onClick={() => setEditingItem(null)}>إلغاء</button>
-                    <button type="submit" className="form-button" disabled={isUploading}>
-                      {isUploading ? `جارِ الرفع... ${uploadProgress}%` : 'حفظ التغييرات'}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </>
-  );
+        </>
+    );
 }
 
+// --- Portfolio Management Tab ---
+const PortfolioManager = ({ clients, categories, items, onUpdate }) => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [clientId, setClientId] = useState('');
+    const [portfolioCategoryId, setPortfolioCategoryId] = useState('');
+    const [file, setFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    
+    const [newClientName, setNewClientName] = useState('');
+    const [newCategoryName, setNewCategoryName] = useState('');
+
+    useEffect(() => {
+        if (clients.length > 0 && !clientId) setClientId(clients[0].id);
+        if (categories.length > 0 && !portfolioCategoryId) setPortfolioCategoryId(categories[0].id);
+    }, [clients, categories]);
+
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        if (!file || !clientId || !portfolioCategoryId) {
+            Swal.fire('خطأ', 'الرجاء اختيار عميل وقسم وملف للرفع.', 'error');
+            return;
+        }
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('client_id', clientId);
+        formData.append('portfolio_category_id', portfolioCategoryId);
+        formData.append('file', file);
+
+        try {
+            await axios.post(`${API_BASE_URL}/api/portfolio/upload`, formData);
+            Swal.fire('نجاح', 'تم رفع المادة بنجاح', 'success');
+            onUpdate();
+        } catch (err) {
+            Swal.fire('خطأ', 'فشل رفع المادة', 'error');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
+    // Generic delete handler
+    const handleDelete = (type, id, name) => {
+        const endpoints = {
+            client: `${API_BASE_URL}/api/clients/${id}`,
+            portfolioCategory: `${API_BASE_URL}/api/content/portfolio/subcategories/${id}`,
+            portfolioItem: `${API_BASE_URL}/api/portfolio/items/${id}`,
+        };
+        const messages = {
+            client: `العميل "${name}"`,
+            portfolioCategory: `القسم "${name}"`,
+            portfolioItem: `المادة "${name}"`,
+        };
+
+        Swal.fire({
+            title: `هل أنت متأكد من حذف ${messages[type]}؟`,
+            text: "لا يمكن التراجع عن هذا الإجراء!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، قم بالحذف'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.delete(endpoints[type]);
+                    Swal.fire('نجاح', `تم حذف ${messages[type]} بنجاح`, 'success');
+                    onUpdate();
+                } catch (err) {
+                    Swal.fire('خطأ', `فشل حذف ${messages[type]}`, 'error');
+                }
+            }
+        });
+    };
+
+    return (
+        <div>
+            <Section title="إضافة مادة جديدة للمحفظة">
+                <form onSubmit={handleUpload}>
+                    <div className="form-grid">
+                        <div className="form-input-group"><label>العنوان</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="form-input" required /></div>
+                        <div className="form-input-group"><label>العميل</label><select value={clientId} onChange={e => setClientId(e.target.value)} className="form-select">{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                        <div className="form-input-group"><label>القسم</label><select value={portfolioCategoryId} onChange={e => setPortfolioCategoryId(e.target.value)} className="form-select">{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                        <div className="form-input-group"><label>الوصف</label><textarea value={description} onChange={e => setDescription(e.target.value)} className="form-textarea"></textarea></div>
+                        <div className="form-input-group"><label>الملف</label><input type="file" onChange={e => setFile(e.target.files[0])} className="form-input" required /></div>
+                    </div>
+                    <button type="submit" className="form-button" style={{marginTop: '1rem'}} disabled={isUploading}>{isUploading ? 'جارِ الرفع...' : 'رفع المادة'}</button>
+                </form>
+                 <table className="data-table" style={{marginTop: '2rem'}}><thead><tr><th>العنوان</th><th>العميل</th><th>القسم</th><th>إجراءات</th></tr></thead><tbody>{items.map(i => <tr key={i.id}><td>{i.title}</td><td>{i.client.name}</td><td>{i.portfolio_category.name}</td><td><button className="delete-button" onClick={() => handleDelete('portfolioItem', i.id, i.title)}>حذف</button></td></tr>)}</tbody></table>
+            </Section>
+        </div>
+    );
+};
+
+// --- Public Content Management Tab ---
+const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
+    const [activeMainCategory, setActiveMainCategory] = useState('printedMaterials');
+    const [newSubcategoryName, setNewSubcategoryName] = useState('');
+    
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [subcategoryId, setSubcategoryId] = useState('');
+    const [file, setFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const currentSubcategories = categoriesMap[activeMainCategory] || [];
+
+    useEffect(() => {
+        if (currentSubcategories.length > 0) {
+            setSubcategoryId(currentSubcategories[0].id);
+        } else {
+            setSubcategoryId('');
+        }
+    }, [activeMainCategory, categoriesMap]);
+
+    const handleCreateSubcategory = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${API_BASE_URL}/api/admin/content/${activeMainCategory}/subcategories`, { name: newSubcategoryName });
+            Swal.fire('نجاح', 'تم إنشاء القسم الفرعي', 'success');
+            setNewSubcategoryName('');
+            onUpdate();
+        } catch (err) {
+            Swal.fire('خطأ', 'فشل إنشاء القسم الفرعي', 'error');
+        }
+    };
+    
+    const handleDeleteSubcategory = (subcatId, subcatName) => {
+         Swal.fire({
+            title: `هل أنت متأكد من حذف قسم "${subcatName}"؟`,
+            text: "سيتم حذف كل المحتوى بداخله!", icon: 'warning',
+            showCancelButton: true, confirmButtonText: 'نعم، قم بالحذف'
+        }).then(async (result) => {
+            if(result.isConfirmed) {
+                try {
+                    await axios.delete(`${API_BASE_URL}/api/admin/content/${activeMainCategory}/subcategories/${subcatId}`);
+                    Swal.fire('نجاح', 'تم حذف القسم', 'success');
+                    onUpdate();
+                } catch (err) {
+                    Swal.fire('خطأ', 'فشل حذف القسم', 'error');
+                }
+            }
+        });
+    };
+
+    const handleAddContent = async (e) => {
+        e.preventDefault();
+        if (!title || !subcategoryId) {
+            Swal.fire('خطأ', 'الرجاء إدخال عنوان واختيار قسم فرعي.', 'error');
+            return;
+        }
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        if (file) formData.append('file', file);
+        
+        try {
+            await axios.post(`${API_BASE_URL}/api/admin/content/${activeMainCategory}/${subcategoryId}`, formData);
+            Swal.fire('نجاح', 'تمت إضافة المحتوى', 'success');
+            setTitle(''); setDescription(''); setFile(null);
+            onUpdate();
+        } catch (err) {
+             Swal.fire('خطأ', 'فشلت إضافة المحتوى', 'error');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
+    const handleDeleteContent = (item) => {
+         Swal.fire({
+            title: `هل أنت متأكد من حذف "${item.title}"؟`,
+            icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، قم بالحذف'
+        }).then(async (result) => {
+            if(result.isConfirmed) {
+                try {
+                    await axios.delete(`${API_BASE_URL}/api/admin/content/${item.category}/${item.subcategory_id}/${item.id}`);
+                    Swal.fire('نجاح', 'تم حذف المحتوى', 'success');
+                    onUpdate();
+                } catch (err) {
+                    Swal.fire('خطأ', 'فشل حذف المحتوى', 'error');
+                }
+            }
+        });
+    };
+
+    return (
+        <div>
+            <Section title="إدارة الأقسام الفرعية العامة">
+                <div className="form-input-group" style={{maxWidth: '400px', marginBottom: '1.5rem'}}>
+                    <label>اختر القسم الرئيسي</label>
+                    <select value={activeMainCategory} onChange={e => setActiveMainCategory(e.target.value)} className="form-select">
+                        <option value="printedMaterials">المواد المطبوعة</option>
+                        <option value="billboards">تاجير لافتات</option>
+                        <option value="events">تنظيم المؤتمرات</option>
+                        <option value="exhibition">معرض البيع</option>
+                    </select>
+                </div>
+                 <form onSubmit={handleCreateSubcategory} style={{display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.5rem'}}>
+                    <div className="form-input-group"><label>اسم القسم الفرعي الجديد</label><input type="text" value={newSubcategoryName} onChange={e => setNewSubcategoryName(e.target.value)} className="form-input" required /></div>
+                    <button type="submit" className="form-button">إضافة قسم</button>
+                </form>
+                 <table className="data-table"><thead><tr><th>اسم القسم الفرعي</th><th>إجراءات</th></tr></thead><tbody>{currentSubcategories.map(s => <tr key={s.id}><td>{s.name}</td><td><button className="delete-button" onClick={() => handleDeleteSubcategory(s.id, s.name)}>حذف</button></td></tr>)}</tbody></table>
+            </Section>
+            <Section title="إضافة محتوى عام جديد">
+                 <form onSubmit={handleAddContent}>
+                    <div className="form-grid">
+                        <div className="form-input-group"><label>العنوان</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="form-input" required /></div>
+                        <div className="form-input-group"><label>القسم الفرعي (من القسم الرئيسي المحدد أعلاه)</label><select value={subcategoryId} onChange={e => setSubcategoryId(e.target.value)} className="form-select">{currentSubcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+                        <div className="form-input-group"><label>الوصف</label><textarea value={description} onChange={e => setDescription(e.target.value)} className="form-textarea"></textarea></div>
+                        <div className="form-input-group"><label>الملف (اختياري)</label><input type="file" onChange={e => setFile(e.target.files[0])} className="form-input" /></div>
+                    </div>
+                    <button type="submit" className="form-button" style={{marginTop: '1rem'}} disabled={isUploading}>{isUploading ? 'جارِ الرفع...' : 'إضافة المحتوى'}</button>
+                </form>
+                 <table className="data-table" style={{marginTop: '2rem'}}><thead><tr><th>العنوان</th><th>القسم الرئيسي</th><th>القسم الفرعي</th><th>إجراءات</th></tr></thead><tbody>{items.map(i => <tr key={i.id}><td>{i.title}</td><td>{i.category}</td><td>{i.subcategory_name}</td><td><button className="delete-button" onClick={() => handleDeleteContent(i)}>حذف</button></td></tr>)}</tbody></table>
+            </Section>
+        </div>
+    );
+};
+
+
+// --- System Management Tab ---
+const SystemManager = ({ currentUser, users, onUpdate }) => {
+    const [newUsername, setNewUsername] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [canAccessPortfolio, setCanAccessPortfolio] = useState(true);
+    
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newAdminPassword, setNewAdminPassword] = useState('');
+    const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
+
+    const handleCreateUser = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${API_BASE_URL}/api/users`, { username: newUsername, password: newPassword, can_access_portfolio: canAccessPortfolio });
+            Swal.fire('نجاح', 'تم إنشاء المستخدم بنجاح', 'success');
+            setNewUsername('');
+            setNewPassword('');
+            onUpdate(); // Refresh data
+        } catch (err) {
+            Swal.fire('خطأ', err.response?.data?.detail || 'فشل إنشاء المستخدم', 'error');
+        }
+    };
+    
+    const handleDeleteUser = (username) => {
+        if (username === 'admin') {
+            Swal.fire('خطأ', 'لا يمكن حذف المستخدم الرئيسي', 'error');
+            return;
+        }
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: "لا يمكن التراجع عن هذا الإجراء!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، قم بالحذف'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.delete(`${API_BASE_URL}/api/users/${username}`);
+                    Swal.fire('نجاح', 'تم حذف المستخدم', 'success');
+                    onUpdate();
+                } catch (err) {
+                    Swal.fire('خطأ', 'فشل حذف المستخدم', 'error');
+                }
+            }
+        });
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        if (newAdminPassword !== confirmAdminPassword) {
+            Swal.fire('خطأ', 'كلمات المرور الجديدة غير متطابقة', 'error');
+            return;
+        }
+        try {
+            await axios.put(`${API_BASE_URL}/api/users/${currentUser.username}/change-password`, {
+                current_password: currentPassword,
+                new_password: newAdminPassword
+            });
+            Swal.fire('نجاح', 'تم تغيير كلمة المرور بنجاح', 'success');
+            setCurrentPassword(''); setNewAdminPassword(''); setConfirmAdminPassword('');
+        } catch (err) {
+             Swal.fire('خطأ', err.response?.data?.detail || 'فشل تغيير كلمة المرور', 'error');
+        }
+    };
+
+    return (
+        <div>
+            <Section title="إدارة المستخدمين">
+                <form onSubmit={handleCreateUser}>
+                    <div className="form-grid">
+                        <div className="form-input-group">
+                            <label htmlFor="new-username">اسم المستخدم</label>
+                            <input id="new-username" type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} className="form-input" required />
+                        </div>
+                        <div className="form-input-group">
+                             <label htmlFor="new-password">كلمة المرور</label>
+                            <input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" required />
+                        </div>
+                         <div className="form-input-group" style={{justifyContent: 'center'}}>
+                            <div className="checkbox-group">
+                                <input id="can-access" type="checkbox" checked={canAccessPortfolio} onChange={e => setCanAccessPortfolio(e.target.checked)} />
+                                <label htmlFor="can-access">يمكنه الوصول للمحفظة</label>
+                            </div>
+                        </div>
+                    </div>
+                     <button type="submit" className="form-button" style={{marginTop: '1rem'}}>إنشاء مستخدم</button>
+                </form>
+                <table className="data-table" style={{marginTop: '2rem'}}>
+                    <thead><tr><th>اسم المستخدم</th><th>يصل للمحفظة</th><th>إجراءات</th></tr></thead>
+                    <tbody>
+                        {users.map(u => (
+                            <tr key={u.username}>
+                                <td>{u.username}</td>
+                                <td>{u.can_access_portfolio ? 'نعم' : 'لا'}</td>
+                                <td>
+                                    <button className="action-button delete-button" onClick={() => handleDeleteUser(u.username)} disabled={u.username === 'admin'}>حذف</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </Section>
+            <Section title="تغيير كلمة المرور (الحساب الحالي)">
+                 <form onSubmit={handleChangePassword}>
+                    <div className="form-grid">
+                        <div className="form-input-group">
+                            <label htmlFor="current-pass">كلمة المرور الحالية</label>
+                            <input id="current-pass" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="form-input" required />
+                        </div>
+                         <div className="form-input-group">
+                            <label htmlFor="new-admin-pass">كلمة المرور الجديدة</label>
+                            <input id="new-admin-pass" type="password" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} className="form-input" required />
+                        </div>
+                         <div className="form-input-group">
+                            <label htmlFor="confirm-admin-pass">تأكيد الجديدة</label>
+                            <input id="confirm-admin-pass" type="password" value={confirmAdminPassword} onChange={e => setConfirmAdminPassword(e.target.value)} className="form-input" required />
+                        </div>
+                    </div>
+                    <button type="submit" className="form-button" style={{marginTop: '1rem'}}>حفظ التغييرات</button>
+                 </form>
+            </Section>
+        </div>
+    );
+};
+
+
 export default AdminDashboard;
+

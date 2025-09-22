@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 
 # --- START: MODIFICATION ---
+# User schemas updated for new logic and fields
 class UserLogin(BaseModel):
     username: str
     password: str
@@ -53,7 +54,7 @@ class Subcategory(SubcategoryBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
-# --- START: NEW SCHEMAS ---
+# --- START: NEW SCHEMAS for Portfolio ---
 class ClientBase(BaseModel):
     name: str
     contact_person: Optional[str] = None
@@ -85,3 +86,4 @@ class PortfolioItem(PortfolioItemBase):
 
     model_config = ConfigDict(from_attributes=True)
 # --- END: NEW SCHEMAS ---
+

@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ParticleBackground from '../components/ParticleBackground';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext'; // Import the useAuth hook
 
 function HomePage({ onNavigate }) {
   // --- START: MODIFICATION ---
+  // Get the current user, logout function, and isGuest status from the AuthContext
   const { user, logout, isGuest } = useAuth();
   
+  // Base navigation buttons visible to everyone
   const buttons = [
     { title: 'المواد المطبوعة', key: 'printedMaterials' },
     { title: 'تاجير لافتات طرقية عملاقة', key: 'billboards' },
@@ -14,16 +16,16 @@ function HomePage({ onNavigate }) {
     { title: 'معرض بيع الاجهزة والمعدات الطباعية', key: 'exhibition' }
   ];
 
-  // Add portfolio button only if user is an admin with access
+  // Conditionally add the portfolio button if the logged-in user is an admin with access rights
   if (user && user.role === 'admin' && user.can_access_portfolio) {
-    buttons.push({ title: 'محفظة الروابط والمواد الرقمية', key: 'portfolio' });
+    buttons.push({ title: 'محفظة المواد الرقمية', key: 'portfolio' });
   }
   // --- END: MODIFICATION ---
 
   const handleFullScreen = () => {
     const elem = document.documentElement;
     if (!document.fullscreenElement) {
-        elem.requestFullscreen().catch(err => console.log(err.message));
+        elem.requestFullscreen().catch(err => console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
     } else {
         document.exitFullscreen();
     }
@@ -36,10 +38,13 @@ function HomePage({ onNavigate }) {
       <ParticleBackground />
       
       <header className="app-header">
+        {/* Empty div for spacing */}
         <div style={{flex: 1}}></div>
+
         <div className="user-info">
-          مرحباً، {user?.username || 'زائر'}
+          مرحباً، {isGuest ? 'زائر' : user?.username}
         </div>
+
         <div className="header-actions" style={{flex: 1, justifyContent: 'flex-end'}}>
           {!isIphone && (
             <button 
@@ -52,8 +57,9 @@ function HomePage({ onNavigate }) {
           )}
 
           {/* --- START: MODIFICATION --- */}
+          {/* Show 'Admin Login' for guests, and 'Logout' for logged-in users */}
           {isGuest ? (
-            <button onClick={() => onNavigate('login')} className="logout-button" style={{order: 2}}>
+            <button onClick={() => onNavigate('login')} className="logout-button" style={{order: 2, background: 'rgba(80, 255, 150, 0.1)', borderColor: 'rgba(80, 255, 150, 0.3)', color: '#aaffcc'}}>
               تسجيل دخول الأدمن
             </button>
           ) : (
@@ -91,6 +97,7 @@ function HomePage({ onNavigate }) {
             </motion.button>
           ))}
           
+          {/* Show Admin Dashboard button only if the user is an admin */}
           {user && user.role === 'admin' && (
             <motion.button
               className="nav-button"
@@ -110,3 +117,4 @@ function HomePage({ onNavigate }) {
 }
 
 export default HomePage;
+

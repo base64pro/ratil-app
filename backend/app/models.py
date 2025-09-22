@@ -5,14 +5,14 @@ import datetime
 from .database import Base
 
 # --- START: MODIFICATION ---
-# Added can_access_portfolio field
+# Added can_access_portfolio field and changed default role
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    role = Column(String, default="admin") # Changed default role to admin
+    role = Column(String, default="admin") # Default role is now admin
     can_access_portfolio = Column(Boolean, default=True)
 
 # --- END: MODIFICATION ---
@@ -36,7 +36,7 @@ class Subcategory(Base):
     owner_category = relationship("Category", back_populates="subcategories")
     items = relationship("ContentItem", back_populates="owner_subcategory", cascade="all, delete-orphan")
     # --- START: MODIFICATION ---
-    # Add relationship to PortfolioItem
+    # Add relationship to PortfolioItem. This allows a subcategory to be a portfolio category.
     portfolio_items = relationship("PortfolioItem", back_populates="portfolio_category", cascade="all, delete-orphan")
     # --- END: MODIFICATION ---
 
@@ -78,3 +78,4 @@ class PortfolioItem(Base):
     client = relationship("Client", back_populates="portfolio_items")
     portfolio_category = relationship("Subcategory", back_populates="portfolio_items")
 # --- END: NEW MODELS ---
+
