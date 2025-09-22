@@ -61,8 +61,8 @@ def create_initial_data(db: Session):
         "printedMaterials": "المواد المطبوعة",
         "billboards": "تاجير لافتات طرقية عملاقة",
         "events": "تنظيم المؤتمرات والمناسبات",
-        "exhibition": "معرض بيع الاجهزة والمعدات الطباعية",
-        "portfolio": "محفظة الروابط والمواد الرقمية" # New portfolio category
+        "exhibition": "بيع الاجهزة والمعدات الطباعية", # Text updated
+        "portfolio": "محفظة الروابط والمواد الرقمية" 
     }
 
     for name, display_name in initial_categories.items():
@@ -84,77 +84,46 @@ def read_root(): return {"message": "Welcome to Ratil Group API"}
 @app.post("/api/login")
 def login_user(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     user_in_db = db.query(models.User).filter(models.User.username == user_credentials.username).first()
-    
     if not user_in_db or not verify_password(user_credentials.password, user_in_db.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="اسم المستخدم أو كلمة المرور غير صحيحة",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
     return {"status": "success", "user": schemas.User.from_orm(user_in_db)}
 
 @app.get("/api/users", response_model=List[schemas.User])
 def get_users_list(db: Session = Depends(get_db)):
-    users = db.query(models.User).all()
-    return users
+    return db.query(models.User).all()
 
 @app.post("/api/users", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.username == user.username).first():
         raise HTTPException(status_code=400, detail="Username already registered")
-    
     hashed_password = get_password_hash(user.password)
-    # The role is now 'admin' by default from the schema
-    new_user = models.User(
-        username=user.username, 
-        hashed_password=hashed_password, 
-        role=user.role, 
-        can_access_portfolio=user.can_access_portfolio
-    )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
+    new_user = models.User(username=user.username, hashed_password=hashed_password, role=user.role, can_access_portfolio=user.can_access_portfolio)
+    db.add(new_user); db.commit(); db.refresh(new_user)
     return new_user
 
 @app.put("/api/users/{username}/change-password", status_code=status.HTTP_200_OK)
 def change_user_password(username: str, passwords: schemas.PasswordChange, db: Session = Depends(get_db)):
     user_in_db = db.query(models.User).filter(models.User.username == username).first()
-    if not user_in_db:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    
-    # A simple security check: prevent changing the main 'admin' password by others.
-    # A real app would use a more robust token-based authentication system.
-    if username == "admin" and user_in_db.username != "admin":
-         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="لا يمكن تغيير كلمة مرور المسؤول الرئيسي")
-
-    if not verify_password(passwords.current_password, user_in_db.hashed_password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="كلمة المرور الحالية غير صحيحة")
-    
+    if not user_in_db: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if username == "admin" and user_in_db.username != "admin": raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="لا يمكن تغيير كلمة مرور المسؤول الرئيسي")
+    if not verify_password(passwords.current_password, user_in_db.hashed_password): raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="كلمة المرور الحالية غير صحيحة")
     user_in_db.hashed_password = get_password_hash(passwords.new_password)
     db.commit()
-    
     return {"status": "success", "message": "تم تغيير كلمة المرور بنجاح"}
 
 @app.delete("/api/users/{username}", status_code=status.HTTP_200_OK)
 def delete_user(username: str, db: Session = Depends(get_db)):
-    if username == "admin":
-        raise HTTPException(status_code=400, detail="Cannot delete the admin user")
+    if username == "admin": raise HTTPException(status_code=400, detail="Cannot delete the admin user")
     user_to_delete = db.query(models.User).filter(models.User.username == username).first()
-    if not user_to_delete:
-        raise HTTPException(status_code=404, detail="User not found")
-    db.delete(user_to_delete)
-    db.commit()
+    if not user_to_delete: raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user_to_delete); db.commit()
     return {"status": "success", "message": f"User '{username}' deleted successfully"}
 
-# --- Public Content & Subcategory Endpoints ---
+# --- Public READ-ONLY Content Endpoints ---
 @app.get("/api/content/{category}/subcategories", response_model=List[schemas.Subcategory])
 def get_subcategories(category: str, db: Session = Depends(get_db)):
     category_obj = db.query(models.Category).filter(models.Category.name == category).first()
-    if not category_obj:
-        raise HTTPException(status_code=404, detail="Category not found")
+    if not category_obj: raise HTTPException(status_code=404, detail="Category not found")
     return category_obj.subcategories
 
 @app.get("/api/content/{category_name}/{subcategory_id}", response_model=List[schemas.ContentItem])
@@ -165,8 +134,8 @@ def get_content_by_subcategory(category_name: str, subcategory_id: int, q: Optio
         query = query.filter(or_(models.ContentItem.title.ilike(search_term), models.ContentItem.description.ilike(search_term)))
     return query.all()
 
-# --- Admin-Only Endpoints for Content & Subcategories ---
-@app.post("/api/admin/{category}/subcategories", response_model=schemas.Subcategory, status_code=status.HTTP_201_CREATED)
+# --- Admin WRITE endpoints for Public Content ---
+@app.post("/api/admin/content/{category}/subcategories", response_model=schemas.Subcategory, status_code=status.HTTP_201_CREATED)
 def create_subcategory_admin(category: str, subcategory: schemas.SubcategoryCreate, db: Session = Depends(get_db)):
     category_obj = db.query(models.Category).filter(models.Category.name == category).first()
     if not category_obj: raise HTTPException(status_code=404, detail="Category not found")
@@ -174,25 +143,16 @@ def create_subcategory_admin(category: str, subcategory: schemas.SubcategoryCrea
     db.add(new_subcategory); db.commit(); db.refresh(new_subcategory)
     return new_subcategory
 
-@app.put("/api/admin/subcategories/{subcategory_id}", response_model=schemas.Subcategory)
-def update_subcategory_admin(subcategory_id: int, subcategory_update: schemas.SubcategoryCreate, db: Session = Depends(get_db)):
-    db_subcategory = db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first()
-    if not db_subcategory: raise HTTPException(status_code=404, detail="Subcategory not found")
-    db_subcategory.name = subcategory_update.name
-    db.commit(); db.refresh(db_subcategory)
-    return db_subcategory
-
-@app.delete("/api/admin/subcategories/{subcategory_id}", status_code=status.HTTP_200_OK)
+@app.delete("/api/admin/content/{category}/subcategories/{subcategory_id}", status_code=status.HTTP_200_OK)
 def delete_subcategory_admin(subcategory_id: int, db: Session = Depends(get_db)):
     db_subcategory = db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first()
     if not db_subcategory: raise HTTPException(status_code=404, detail="Subcategory not found")
     db.delete(db_subcategory); db.commit()
     return {"status": "success", "message": "Subcategory and its items deleted"}
 
-@app.post("/api/admin/content/{subcategory_id}", response_model=schemas.ContentItem, status_code=status.HTTP_201_CREATED)
+@app.post("/api/admin/content/{category}/{subcategory_id}", response_model=schemas.ContentItem, status_code=status.HTTP_201_CREATED)
 def add_content_to_subcategory_admin(subcategory_id: int, title: str = Form(...), description: str = Form(...), file: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
-    if not db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first():
-        raise HTTPException(status_code=404, detail="Subcategory not found")
+    if not db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first(): raise HTTPException(status_code=404, detail="Subcategory not found")
     file_url = ""
     if file and file.filename:
         resource_type = "video" if file.content_type and file.content_type.startswith("video") else "image"
@@ -202,20 +162,7 @@ def add_content_to_subcategory_admin(subcategory_id: int, title: str = Form(...)
     db.add(new_item); db.commit(); db.refresh(new_item)
     return new_item
 
-@app.put("/api/admin/content/{item_id}", response_model=schemas.ContentItem)
-def update_content_item_admin(item_id: int, title: str = Form(...), description: str = Form(...), file: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
-    db_item = db.query(models.ContentItem).filter(models.ContentItem.id == item_id).first()
-    if not db_item: raise HTTPException(status_code=404, detail="Content item not found")
-    file_url = db_item.imageUrl
-    if file and file.filename:
-        resource_type = "video" if file.content_type and file.content_type.startswith("video") else "image"
-        upload_result = cloudinary.uploader.upload(file.file, resource_type=resource_type, folder="ratil_group_content")
-        file_url = upload_result.get("secure_url", "")
-    db_item.title = title; db_item.description = description; db_item.imageUrl = file_url
-    db.commit(); db.refresh(db_item)
-    return db_item
-
-@app.delete("/api/admin/content/{item_id}", status_code=status.HTTP_200_OK)
+@app.delete("/api/admin/content/{category}/{subcategory_id}/{item_id}", status_code=status.HTTP_200_OK)
 def delete_content_item_admin(item_id: int, db: Session = Depends(get_db)):
     db_item = db.query(models.ContentItem).filter(models.ContentItem.id == item_id).first()
     if not db_item: raise HTTPException(status_code=404, detail="Content item not found")
@@ -225,24 +172,23 @@ def delete_content_item_admin(item_id: int, db: Session = Depends(get_db)):
 @app.get("/api/admin/content", response_model=List[schemas.AdminContentItem])
 def get_all_content_for_admin(db: Session = Depends(get_db)):
     all_items = db.query(models.ContentItem).options(joinedload(models.ContentItem.owner_subcategory).joinedload(models.Subcategory.owner_category)).all()
-    return [schemas.AdminContentItem(
-        id=item.id, title=item.title, description=item.description, imageUrl=item.imageUrl,
-        category=item.owner_subcategory.owner_category.name,
-        subcategory_id=item.subcategory_id, subcategory_name=item.owner_subcategory.name
-    ) for item in all_items]
+    # Using a direct mapping assuming all relationships are loaded
+    response_items = []
+    for item in all_items:
+        response_items.append(schemas.AdminContentItem(
+            id=item.id, title=item.title, description=item.description, imageUrl=item.imageUrl,
+            category=item.owner_subcategory.owner_category.name,
+            subcategory_id=item.subcategory_id, subcategory_name=item.owner_subcategory.name
+        ))
+    return response_items
 
-# --- START: NEW PORTFOLIO & CLIENT ENDPOINTS (Admin Only) ---
-# Client Management
+# --- Portfolio & Client Endpoints ---
 @app.get("/api/clients", response_model=List[schemas.Client])
 def get_clients(q: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(models.Client)
     if q:
         search_term = f"%{q.lower()}%"
-        query = query.filter(or_(
-            models.Client.name.ilike(search_term),
-            models.Client.address.ilike(search_term),
-            models.Client.contact_person.ilike(search_term),
-        ))
+        query = query.filter(or_(models.Client.name.ilike(search_term), models.Client.address.ilike(search_term), models.Client.contact_person.ilike(search_term)))
     return query.order_by(models.Client.name).all()
 
 @app.post("/api/clients", response_model=schemas.Client, status_code=status.HTTP_201_CREATED)
@@ -250,90 +196,56 @@ def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
     new_client = models.Client(**client.dict())
     db.add(new_client); db.commit(); db.refresh(new_client)
     return new_client
-
-@app.put("/api/clients/{client_id}", response_model=schemas.Client)
-def update_client(client_id: int, client_update: schemas.ClientCreate, db: Session = Depends(get_db)):
-    db_client = db.query(models.Client).filter(models.Client.id == client_id).first()
-    if not db_client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    for var, value in vars(client_update).items():
-        setattr(db_client, var, value) if value else None
-    db.commit()
-    db.refresh(db_client)
-    return db_client
-
+    
 @app.delete("/api/clients/{client_id}", status_code=status.HTTP_200_OK)
 def delete_client(client_id: int, db: Session = Depends(get_db)):
     db_client = db.query(models.Client).filter(models.Client.id == client_id).first()
-    if not db_client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    db.delete(db_client)
-    db.commit()
+    if not db_client: raise HTTPException(status_code=404, detail="Client not found")
+    db.delete(db_client); db.commit()
     return {"status": "success", "message": "Client deleted successfully"}
 
-# Portfolio Item Management
 @app.get("/api/portfolio/items", response_model=List[schemas.PortfolioItem])
 def get_portfolio_items(
-    category_id: Optional[int] = Query(None),
-    client_id: Optional[int] = Query(None),
-    start_date: Optional[str] = Query(None), # Receive dates as strings
-    end_date: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    q: Optional[str] = Query(None), # <<< NEW: Search term for title/description
+    category_id: Optional[int]=Query(None), 
+    client_id: Optional[int]=Query(None), 
+    start_date: Optional[str]=Query(None), 
+    end_date: Optional[str]=Query(None), 
+    db: Session=Depends(get_db)
 ):
-    query = db.query(models.PortfolioItem).options(
-        joinedload(models.PortfolioItem.client),
-        joinedload(models.PortfolioItem.portfolio_category)
-    ).order_by(models.PortfolioItem.upload_date.desc())
-
-    if category_id:
-        query = query.filter(models.PortfolioItem.portfolio_category_id == category_id)
-    if client_id:
-        query = query.filter(models.PortfolioItem.client_id == client_id)
-    if start_date:
-        query = query.filter(models.PortfolioItem.upload_date >= datetime.fromisoformat(start_date))
-    if end_date:
-        # To include the entire end day, we can add logic to go to the end of that day.
-        # For simplicity now, we'll just use the provided date.
-        query = query.filter(models.PortfolioItem.upload_date <= datetime.fromisoformat(end_date))
-        
+    query = db.query(models.PortfolioItem).options(joinedload(models.PortfolioItem.client), joinedload(models.PortfolioItem.portfolio_category)).order_by(models.PortfolioItem.upload_date.desc())
+    
+    # <<< NEW: Text search logic
+    if q:
+        search_term = f"%{q.lower()}%"
+        query = query.filter(or_(
+            models.PortfolioItem.title.ilike(search_term),
+            models.PortfolioItem.description.ilike(search_term)
+        ))
+    
+    if category_id: query = query.filter(models.PortfolioItem.portfolio_category_id == category_id)
+    if client_id: query = query.filter(models.PortfolioItem.client_id == client_id)
+    if start_date: query = query.filter(models.PortfolioItem.upload_date >= datetime.fromisoformat(start_date))
+    if end_date: query = query.filter(models.PortfolioItem.upload_date <= datetime.fromisoformat(end_date))
     return query.all()
 
 @app.post("/api/portfolio/upload", response_model=schemas.PortfolioItem, status_code=status.HTTP_201_CREATED)
-def upload_portfolio_item(
-    title: str = Form(...),
-    description: Optional[str] = Form(None),
-    client_id: int = Form(...),
-    portfolio_category_id: int = Form(...),
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    # Construct a structured path for Cloudinary
-    now = datetime.utcnow()
+def upload_portfolio_item(title: str=Form(...), description: Optional[str]=Form(None), client_id: int=Form(...), portfolio_category_id: int=Form(...), file: UploadFile=File(...), db: Session=Depends(get_db)):
     client = db.query(models.Client).filter(models.Client.id == client_id).first()
     if not client: raise HTTPException(404, "Client not found")
-
+    now = datetime.utcnow()
     folder_path = f"portfolio/{now.year}/{now.month:02d}/{now.day:02d}/{client.name.replace(' ', '_')}"
-    
     resource_type = "video" if file.content_type and file.content_type.startswith("video") else "image"
     upload_result = cloudinary.uploader.upload(file.file, resource_type=resource_type, folder=folder_path)
     file_url = upload_result.get("secure_url", "")
-    
-    new_item = models.PortfolioItem(
-        title=title, description=description, file_url=file_url,
-        client_id=client_id, portfolio_category_id=portfolio_category_id, upload_date=now
-    )
-    db.add(new_item); db.commit()
-    # Eagerly load relationships before returning
-    db.refresh(new_item, attribute_names=['client', 'portfolio_category'])
+    new_item = models.PortfolioItem(title=title, description=description, file_url=file_url, client_id=client_id, portfolio_category_id=portfolio_category_id, upload_date=now)
+    db.add(new_item); db.commit(); db.refresh(new_item, attribute_names=['client', 'portfolio_category'])
     return new_item
 
 @app.delete("/api/portfolio/items/{item_id}", status_code=status.HTTP_200_OK)
-def delete_portfolio_item(item_id: int, db: Session = Depends(get_db)):
+def delete_portfolio_item(item_id: int, db: Session=Depends(get_db)):
     db_item = db.query(models.PortfolioItem).filter(models.PortfolioItem.id == item_id).first()
-    if not db_item:
-        raise HTTPException(status_code=404, detail="Portfolio item not found")
-    db.delete(db_item)
-    db.commit()
+    if not db_item: raise HTTPException(status_code=404, detail="Portfolio item not found")
+    db.delete(db_item); db.commit()
     return {"status": "success", "message": "Item deleted successfully"}
-# --- END: NEW PORTFOLIO & CLIENT ENDPOINTS ---
 

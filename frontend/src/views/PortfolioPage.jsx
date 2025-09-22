@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import ParticleBackground from '../components/ParticleBackground';
@@ -24,12 +24,13 @@ const PortfolioPageStyles = `
   .back-button { padding: 10px 25px; font-size: 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
   .back-button:hover { background: rgba(255, 255, 255, 0.2); }
   
-  .page-content { flex-grow: 1; width: 100%; max-width: 1600px; background: rgba(15, 24, 37, 0.5); backdrop-filter: blur(5px); border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem; z-index: 2; overflow-y: auto; }
+  .page-content { flex-grow: 1; width: 100%; max-width: 1600px; background: rgba(15, 24, 37, 0.5); backdrop-filter: blur(5px); border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem; z-index: 2; overflow-y: auto; display: flex; flex-direction: column;}
   
-  .filters-container { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 10px; }
+  .filters-container { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 10px; }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 1.5rem; }
   .filter-group { display: flex; flex-direction: column; gap: 0.5rem; flex: 1 1 200px; }
   .filter-label { font-size: 0.9rem; color: #b8c5d6; }
-  .filter-input, .filter-select { padding: 10px 12px; font-size: 1rem; background-color: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #ffffff; }
+  .filter-input, .filter-select { padding: 10px 12px; font-size: 1rem; background-color: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #ffffff; width: 100%; }
   .filter-input:focus, .filter-select:focus { outline: none; border-color: rgba(255, 255, 255, 0.5); }
   
   .content-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
@@ -45,7 +46,7 @@ const PortfolioPageStyles = `
 
   /* Modal Styles */
   .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(10, 25, 47, 0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-  .modal-view { width: 90%; height: 90%; max-width: 1200px; max-height: 80vh; background: rgba(15, 24, 37, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; display: flex; overflow: hidden; }
+  .modal-view { width: 90%; height: 90%; max-width: 1200px; max-height: 80vh; background: rgba(15, 24, 37, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; display: flex; overflow: hidden; flex-direction: row-reverse; }
   .modal-media { flex: 3; background-color: #0a0e1a; display: flex; align-items: center; justify-content: center; }
   .modal-image, .modal-video { max-width: 100%; max-height: 100%; object-fit: contain; }
   .modal-details { flex: 1; padding: 2rem; overflow-y: auto; }
@@ -53,7 +54,7 @@ const PortfolioPageStyles = `
   .modal-description { font-size: 1rem; line-height: 1.7; color: #b8c5d6; white-space: pre-wrap; margin-bottom: 1.5rem; }
   .modal-meta { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; font-size: 0.9rem; color: #8892b0; }
   .modal-meta p { margin-bottom: 0.5rem; }
-  .modal-close-button { position: absolute; top: 15px; left: 15px; width: 40px; height: 40px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; z-index: 1001; }
+  .modal-close-button { position: absolute; top: 15px; right: 15px; /* Changed to right */ width: 40px; height: 40px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; z-index: 1001; }
 `;
 
 function PortfolioPage({ onNavigate }) {
@@ -64,17 +65,23 @@ function PortfolioPage({ onNavigate }) {
     const [error, setError] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
 
+    // --- NEW: Separate state for search/filter inputs ---
     const [filters, setFilters] = useState({
         categoryId: '',
         clientId: '',
         startDate: '',
         endDate: '',
+        searchTerm: '' // For general title/description search
     });
+    
+    // --- NEW: State for live-filtering dropdowns ---
+    const [clientFilter, setClientFilter] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+
 
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                // Fetch data for the filter dropdowns
                 const [clientsRes, categoriesRes] = await Promise.all([
                     axios.get(`${API_BASE_URL}/api/clients`),
                     axios.get(`${API_BASE_URL}/api/content/portfolio/subcategories`)
@@ -86,14 +93,14 @@ function PortfolioPage({ onNavigate }) {
             }
         };
         fetchInitialData();
-        fetchItems(); // Fetch all items on initial load
+        fetchItems();
     }, []);
 
     const fetchItems = async () => {
         setLoading(true);
         try {
-            // Build query parameters from the filters state
             const params = {
+                q: filters.searchTerm || undefined,
                 category_id: filters.categoryId || undefined,
                 client_id: filters.clientId || undefined,
                 start_date: filters.startDate || undefined,
@@ -109,17 +116,26 @@ function PortfolioPage({ onNavigate }) {
         }
     };
     
-    // Update filter state on user input
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    // Trigger a new fetch when the search button is clicked
     const handleFilterSubmit = (e) => {
         e.preventDefault();
         fetchItems();
     };
+
+    // --- NEW: Memoized filtered lists for dropdowns ---
+    const filteredClients = useMemo(() => 
+        clients.filter(c => c.name.toLowerCase().includes(clientFilter.toLowerCase())),
+        [clients, clientFilter]
+    );
+
+    const filteredCategories = useMemo(() => 
+        categories.filter(c => c.name.toLowerCase().includes(categoryFilter.toLowerCase())),
+        [categories, categoryFilter]
+    );
 
     const isVideoUrl = (url) => url && ['.mp4', '.webm', '.mov'].some(ext => url.toLowerCase().endsWith(ext));
 
@@ -137,29 +153,58 @@ function PortfolioPage({ onNavigate }) {
                 <div className="page-content">
                     <form onSubmit={handleFilterSubmit} className="filters-container">
                         <div className="filter-group">
-                            <label className="filter-label">القسم</label>
-                            <select name="categoryId" value={filters.categoryId} onChange={handleFilterChange} className="filter-select">
-                                <option value="">الكل</option>
-                                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                            </select>
+                            <label className="filter-label">بحث بالاسم أو الوصف</label>
+                            <input 
+                                type="text" 
+                                name="searchTerm" 
+                                value={filters.searchTerm} 
+                                onChange={handleFilterChange} 
+                                className="filter-input" 
+                                placeholder="اكتب للبحث..."
+                            />
                         </div>
-                         <div className="filter-group">
-                            <label className="filter-label">العميل</label>
-                            <select name="clientId" value={filters.clientId} onChange={handleFilterChange} className="filter-select">
-                                <option value="">الكل</option>
-                                {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-                            </select>
+                        <div className="filter-row">
+                            <div className="filter-group">
+                                <label className="filter-label">تصفية العملاء</label>
+                                <input 
+                                    type="text" 
+                                    value={clientFilter} 
+                                    onChange={(e) => setClientFilter(e.target.value)} 
+                                    className="filter-input" 
+                                    placeholder="اكتب اسم العميل..."
+                                />
+                                <select name="clientId" value={filters.clientId} onChange={handleFilterChange} className="filter-select" style={{marginTop: '0.5rem'}}>
+                                    <option value="">اختر عميل...</option>
+                                    {filteredClients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="filter-group">
+                                <label className="filter-label">تصفية الأقسام</label>
+                                 <input 
+                                    type="text" 
+                                    value={categoryFilter} 
+                                    onChange={(e) => setCategoryFilter(e.target.value)} 
+                                    className="filter-input" 
+                                    placeholder="اكتب اسم القسم..."
+                                />
+                                <select name="categoryId" value={filters.categoryId} onChange={handleFilterChange} className="filter-select" style={{marginTop: '0.5rem'}}>
+                                    <option value="">اختر قسم...</option>
+                                    {filteredCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                </select>
+                            </div>
                         </div>
-                        <div className="filter-group">
-                            <label className="filter-label">من تاريخ</label>
-                            <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="filter-input" />
+                        <div className="filter-row">
+                            <div className="filter-group">
+                                <label className="filter-label">من تاريخ</label>
+                                <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="filter-input" />
+                            </div>
+                            <div className="filter-group">
+                                <label className="filter-label">إلى تاريخ</label>
+                                <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="filter-input" />
+                            </div>
                         </div>
-                        <div className="filter-group">
-                            <label className="filter-label">إلى تاريخ</label>
-                            <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="filter-input" />
-                        </div>
-                        <div className="filter-group" style={{justifyContent: 'flex-end'}}>
-                             <button type="submit" className="back-button">بحث</button>
+                         <div className="filter-group" style={{alignItems: 'flex-start'}}>
+                             <button type="submit" className="back-button">بحث وتصفية</button>
                         </div>
                     </form>
 

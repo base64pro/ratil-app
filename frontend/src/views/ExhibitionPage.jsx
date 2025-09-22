@@ -4,7 +4,7 @@ import ContentDisplayPage from '../components/ContentDisplayPage';
 function ExhibitionPage({ onNavigate }) {
   return (
     <ContentDisplayPage 
-      pageTitle="معرض بيع الاجهزة والمعدات الطباعية"
+      pageTitle="بيع الاجهزة والمعدات الطباعية" // MODIFIED TEXT
       category="exhibition"
       onBack={() => onNavigate('home')}
     />
@@ -12,3 +12,4 @@ function ExhibitionPage({ onNavigate }) {
 }
 
 export default ExhibitionPage;
+
