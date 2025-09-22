@@ -1,30 +1,31 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
+import datetime
 
 from .database import Base
 
-# جدول المستخدمين
+# --- START: MODIFICATION ---
+# Added can_access_portfolio field
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    role = Column(String, default="viewer")
+    role = Column(String, default="admin") # Changed default role to admin
+    can_access_portfolio = Column(Boolean, default=True)
 
-# جدول الأقسام الرئيسية
+# --- END: MODIFICATION ---
+
 class Category(Base):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True)
-    # اسم القسم الرئيسي بالإنجليزية لسهولة التعامل معه في الكود
     name = Column(String, unique=True, index=True) 
-    # الاسم المعروض باللغة العربية
     display_name = Column(String) 
 
-    subcategories = relationship("Subcategory", back_populates="owner_category")
+    subcategories = relationship("Subcategory", back_populates="owner_category", cascade="all, delete-orphan")
 
-# جدول الأقسام الفرعية
 class Subcategory(Base):
     __tablename__ = "subcategories"
 
@@ -33,9 +34,13 @@ class Subcategory(Base):
     category_id = Column(Integer, ForeignKey("categories.id"))
 
     owner_category = relationship("Category", back_populates="subcategories")
-    items = relationship("ContentItem", back_populates="owner_subcategory")
+    items = relationship("ContentItem", back_populates="owner_subcategory", cascade="all, delete-orphan")
+    # --- START: MODIFICATION ---
+    # Add relationship to PortfolioItem
+    portfolio_items = relationship("PortfolioItem", back_populates="portfolio_category", cascade="all, delete-orphan")
+    # --- END: MODIFICATION ---
 
-# جدول المحتوى
+
 class ContentItem(Base):
     __tablename__ = "content_items"
 
@@ -46,3 +51,30 @@ class ContentItem(Base):
     subcategory_id = Column(Integer, ForeignKey("subcategories.id"))
 
     owner_subcategory = relationship("Subcategory", back_populates="items")
+
+# --- START: NEW MODELS ---
+class Client(Base):
+    __tablename__ = "clients"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    contact_person = Column(String)
+    phone = Column(String)
+    address = Column(String)
+    email = Column(String, unique=True, index=True)
+    
+    portfolio_items = relationship("PortfolioItem", back_populates="client", cascade="all, delete-orphan")
+
+class PortfolioItem(Base):
+    __tablename__ = "portfolio_items"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(String)
+    file_url = Column(String)
+    upload_date = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    portfolio_category_id = Column(Integer, ForeignKey("subcategories.id"))
+
+    client = relationship("Client", back_populates="portfolio_items")
+    portfolio_category = relationship("Subcategory", back_populates="portfolio_items")
+# --- END: NEW MODELS ---

@@ -3,23 +3,35 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const AuthContext = createContext(null);
-// --- تم التعديل هنا ---
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// --- START: MODIFICATION ---
+// Define a default guest user object
+const guestUser = {
+    username: 'Guest',
+    role: 'public',
+    can_access_portfolio: false,
+};
+
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    // Initialize with guestUser instead of null
+    const [user, setUser] = useState(guestUser);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         try {
             const storedUser = localStorage.getItem('ratilUser');
             if (storedUser) {
+                // If there's a stored user, parse and set it
                 setUser(JSON.parse(storedUser));
+            } else {
+                // Otherwise, ensure it's the guest user
+                setUser(guestUser);
             }
         } catch (error) {
             console.error("Failed to parse user from localStorage", error);
             localStorage.removeItem('ratilUser');
-            setUser(null);
+            setUser(guestUser);
         } finally {
             setLoading(false);
         }
@@ -46,17 +58,21 @@ export const AuthProvider = ({ children }) => {
                 title: 'خطأ في تسجيل الدخول',
                 text: detail,
             });
-            throw error; // Re-throw the error to be caught in the component
+            throw error;
         }
     };
 
     const logout = () => {
         localStorage.removeItem('ratilUser');
-        setUser(null);
+        // On logout, revert to the guest user state
+        setUser(guestUser);
     };
+    
+    // Add a helper to check if the user is a guest
+    const isGuest = user.role === 'public';
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, isGuest }}>
             {!loading && children}
         </AuthContext.Provider>
     );
@@ -65,3 +81,4 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
     return useContext(AuthContext);
 };
+// --- END: MODIFICATION ---

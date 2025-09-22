@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ParticleBackground from '../components/ParticleBackground';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
-function HomePage({ onNavigate, user, onLogout }) {
+function HomePage({ onNavigate }) {
+  // --- START: MODIFICATION ---
+  const { user, logout, isGuest } = useAuth();
   
   const buttons = [
     { title: 'المواد المطبوعة', key: 'printedMaterials' },
@@ -11,54 +14,54 @@ function HomePage({ onNavigate, user, onLogout }) {
     { title: 'معرض بيع الاجهزة والمعدات الطباعية', key: 'exhibition' }
   ];
 
-  // --- START: Fullscreen Logic ---
+  // Add portfolio button only if user is an admin with access
+  if (user && user.role === 'admin' && user.can_access_portfolio) {
+    buttons.push({ title: 'محفظة الروابط والمواد الرقمية', key: 'portfolio' });
+  }
+  // --- END: MODIFICATION ---
+
   const handleFullScreen = () => {
     const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) { /* Safari */
-      elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { /* IE11 */
-      elem.msRequestFullscreen();
+    if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => console.log(err.message));
+    } else {
+        document.exitFullscreen();
     }
   };
   
-  // Check if the device is an iPhone to hide the button
   const isIphone = /iPhone/i.test(navigator.userAgent);
-  // --- END: Fullscreen Logic ---
 
   return (
     <div className="app-container">
       <ParticleBackground />
       
       <header className="app-header">
-        {/* An empty div to push other items to the right */}
         <div style={{flex: 1}}></div>
-
         <div className="user-info">
           مرحباً، {user?.username || 'زائر'}
         </div>
-
         <div className="header-actions" style={{flex: 1, justifyContent: 'flex-end'}}>
-          {/* --- The button will only render if the device is NOT an iPhone --- */}
           {!isIphone && (
             <button 
               onClick={handleFullScreen} 
               className="logout-button" 
-              style={{
-                background: 'rgba(80, 150, 255, 0.1)', 
-                borderColor: 'rgba(80, 150, 255, 0.3)', 
-                color: '#aaccff',
-                order: 1 // Ensure it comes first
-              }}
+              style={{ background: 'rgba(80, 150, 255, 0.1)', borderColor: 'rgba(80, 150, 255, 0.3)', color: '#aaccff', order: 1 }}
             >
               ملء الشاشة
             </button>
           )}
 
-          <button onClick={onLogout} className="logout-button" style={{order: 2}}>
-            تسجيل الخروج
-          </button>
+          {/* --- START: MODIFICATION --- */}
+          {isGuest ? (
+            <button onClick={() => onNavigate('login')} className="logout-button" style={{order: 2}}>
+              تسجيل دخول الأدمن
+            </button>
+          ) : (
+            <button onClick={logout} className="logout-button" style={{order: 2}}>
+              تسجيل الخروج
+            </button>
+          )}
+          {/* --- END: MODIFICATION --- */}
         </div>
       </header>
 

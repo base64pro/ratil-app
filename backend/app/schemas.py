@@ -1,7 +1,8 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import List, Optional
+from datetime import datetime
 
-# --- Pydantic Models ---
+# --- START: MODIFICATION ---
 class UserLogin(BaseModel):
     username: str
     password: str
@@ -9,26 +10,29 @@ class UserLogin(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "viewer"
+    role: str = "admin" # Default role is now admin
+    can_access_portfolio: bool = True
 
 class User(BaseModel):
     username: str
     role: str
+    can_access_portfolio: bool
     
     model_config = ConfigDict(from_attributes=True)
 
-# --- START: New Model for Password Change ---
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str
-# --- END: New Model for Password Change ---
+# --- END: MODIFICATION ---
 
-class ContentItem(BaseModel):
-    id: int
+
+class ContentItemBase(BaseModel):
     title: str
     description: str
     imageUrl: str
-    
+
+class ContentItem(ContentItemBase):
+    id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -36,16 +40,48 @@ class AdminContentItem(ContentItem):
     category: str
     subcategory_id: int
     subcategory_name: str
-
     model_config = ConfigDict(from_attributes=True)
 
 
-class Subcategory(BaseModel):
+class SubcategoryBase(BaseModel):
+    name: str
+
+class SubcategoryCreate(SubcategoryBase):
+    pass
+
+class Subcategory(SubcategoryBase):
     id: int
-    name: str
-    
     model_config = ConfigDict(from_attributes=True)
 
-
-class SubcategoryCreate(BaseModel):
+# --- START: NEW SCHEMAS ---
+class ClientBase(BaseModel):
     name: str
+    contact_person: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+class ClientCreate(ClientBase):
+    pass
+
+class Client(ClientBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
+class PortfolioItemBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class PortfolioItemCreate(PortfolioItemBase):
+    client_id: int
+    portfolio_category_id: int
+
+class PortfolioItem(PortfolioItemBase):
+    id: int
+    file_url: str
+    upload_date: datetime
+    client: Client
+    portfolio_category: Subcategory
+
+    model_config = ConfigDict(from_attributes=True)
+# --- END: NEW SCHEMAS ---

@@ -1,15 +1,14 @@
 import React from 'react';
 import ContentDisplayPage from '../components/ContentDisplayPage';
 
-function BillboardsPage({ onBack }) {
+function BillboardsPage({ onNavigate }) {
   return (
     <ContentDisplayPage 
       pageTitle="تاجير لافتات طرقية عملاقة"
       category="billboards"
-      onBack={onBack}
+      onBack={() => onNavigate('home')}
     />
   );
 }
 
 export default BillboardsPage;
-

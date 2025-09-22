@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from './context/AuthContext'; // <-- 1. استيراد useAuth
+import { useAuth } from './context/AuthContext';
 
-// --- استيراد صفحات العرض ---
+// --- Import Pages ---
 import HomePage from './views/HomePage.jsx';
 import LoginPage from './views/LoginPage.jsx';
 import PrintedMaterialsPage from './views/PrintedMaterialsPage.jsx';
@@ -9,59 +9,53 @@ import BillboardsPage from './views/BillboardsPage.jsx';
 import EventsPage from './views/EventsPage.jsx';
 import ExhibitionPage from './views/ExhibitionPage.jsx';
 import AdminDashboard from './views/AdminDashboard.jsx';
+import PortfolioPage from './views/PortfolioPage.jsx'; // Import the new portfolio page
 
 function App() {
-  // --- 2. استخدام السياق بدلاً من الحالة المحلية للمصادقة ---
-  const { user, logout } = useAuth(); 
-
-  // --- ستبقى هذه الحالة المحلية لإدارة التنقل بين الصفحات ---
+  const { user } = useAuth();
   const [activePage, setActivePage] = useState('home');
 
-  // --- دالة الخروج الكاملة الآن ---
-  const handleLogout = () => {
-    logout(); // استدعاء دالة الخروج من السياق
-    setActivePage('home'); // إعادة تعيين الصفحة إلى الرئيسية بعد الخروج
-  };
-  
   const navigateTo = (page) => {
     setActivePage(page);
   };
-  
-  // --- 3. التحقق من وجود المستخدم من السياق مباشرة ---
-  if (!user) {
-    // إذا لم يكن هناك مستخدم، نعرض صفحة تسجيل الدخول دائمًا
-    // لم نعد بحاجة لتمرير onLoginSuccess لأن LoginPage سيستخدم السياق مباشرةً
-    return <LoginPage />;
-  }
 
-  // إذا كان هناك مستخدم، نعرض الصفحات بناءً على activePage
+  // --- START: MODIFICATION ---
+  // The login page is now a route, not the default for non-users.
+  // We check roles to protect the admin dashboard.
   const renderPage = () => {
+    // Protect admin-only pages
+    if (activePage === 'adminDashboard' && user.role !== 'admin') {
+      return <HomePage onNavigate={navigateTo} />;
+    }
+     // Protect portfolio page based on user permission
+    if (activePage === 'portfolio' && (user.role !== 'admin' || !user.can_access_portfolio)) {
+      return <HomePage onNavigate={navigateTo} />;
+    }
+
     switch (activePage) {
       case 'home':
-        // تمرير دالة الخروج إلى الصفحة الرئيسية لإضافتها لاحقًا
-        return <HomePage onNavigate={navigateTo} user={user} onLogout={handleLogout} />;
+        return <HomePage onNavigate={navigateTo} />;
       case 'printedMaterials':
-        return <PrintedMaterialsPage onBack={() => navigateTo('home')} />;
+        return <PrintedMaterialsPage onNavigate={navigateTo} />;
       case 'billboards':
-        return <BillboardsPage onBack={() => navigateTo('home')} />;
+        return <BillboardsPage onNavigate={navigateTo} />;
       case 'events':
-        return <EventsPage onBack={() => navigateTo('home')} />;
+        return <EventsPage onNavigate={navigateTo} />;
       case 'exhibition':
-        return <ExhibitionPage onBack={() => navigateTo('home')} />;
+        return <ExhibitionPage onNavigate={navigateTo} />;
+      case 'portfolio': // New portfolio page route
+        return <PortfolioPage onNavigate={navigateTo} />;
+      case 'login': // New login page route
+        return <LoginPage onLoginSuccess={() => navigateTo('home')} />;
       case 'adminDashboard':
-        // تمرير دالة الخروج أيضًا إلى لوحة التحكم
-        return <AdminDashboard onBack={() => navigateTo('home')} onLogout={handleLogout} />;
+        return <AdminDashboard onBack={() => navigateTo('home')} />;
       default:
-        // الصفحة الافتراضية للمستخدم المسجل هي 'home'
-        return <HomePage onNavigate={navigateTo} user={user} onLogout={handleLogout} />;
+        return <HomePage onNavigate={navigateTo} />;
     }
   };
+  // --- END: MODIFICATION ---
 
-  return (
-    <>
-      {renderPage()}
-    </>
-  );
+  return <>{renderPage()}</>;
 }
 
 export default App;
