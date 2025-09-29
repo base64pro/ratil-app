@@ -14,7 +14,7 @@ from passlib.context import CryptContext
 app = FastAPI(title="Ratil Group API")
 models.Base.metadata.create_all(bind=engine)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # --- Helper Functions ---
 def verify_password(plain_password, hashed_password):
