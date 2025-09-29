@@ -242,11 +242,22 @@ def get_portfolio_items(
     
     if category_id: query = query.filter(models.PortfolioItem.category_id == category_id)
     if client_id: query = query.filter(models.PortfolioItem.client_id == client_id)
-    if start_date: query = query.filter(models.PortfolioItem.upload_date >= datetime.fromisoformat(start_date))
-    if end_date: query = query.filter(models.PortfolioItem.upload_date <= datetime.fromisoformat(end_date))
+    
+    # --- START: FIX ---
+    # Handle 'Z' (Zulu time/UTC) in ISO date strings sent from the frontend
+    if start_date:
+        if start_date.endswith('Z'):
+            start_date = start_date[:-1] + "+00:00"
+        query = query.filter(models.PortfolioItem.upload_date >= datetime.fromisoformat(start_date))
+    
+    if end_date:
+        if end_date.endswith('Z'):
+            end_date = end_date[:-1] + "+00:00"
+        query = query.filter(models.PortfolioItem.upload_date <= datetime.fromisoformat(end_date))
+    # --- END: FIX ---
+
     return query.all()
 
-# --- START: MODIFICATION ---
 @app.post("/api/portfolio/upload", response_model=schemas.PortfolioItem, status_code=status.HTTP_201_CREATED)
 def upload_portfolio_item(
     title: str=Form(...), 
@@ -293,7 +304,6 @@ def upload_portfolio_item(
     db.commit()
     db.refresh(new_item, attribute_names=['client', 'category'])
     return new_item
-# --- END: MODIFICATION ---
 
 @app.delete("/api/portfolio/items/{item_id}", status_code=status.HTTP_200_OK)
 def delete_portfolio_item(item_id: int, db: Session=Depends(get_db)):
