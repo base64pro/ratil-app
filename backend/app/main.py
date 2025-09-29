@@ -72,9 +72,14 @@ def create_initial_data(db: Session):
     
     db.commit()
 
-db_session = SessionLocal()
-create_initial_data(db_session)
-db_session.close()
+# --- START: MODIFICATION ---
+# Improved startup logic to ensure stability
+@app.on_event("startup")
+def on_startup():
+    db = SessionLocal()
+    create_initial_data(db)
+    db.close()
+# --- END: MODIFICATION ---
 
 # --- API Endpoints ---
 @app.get("/")
