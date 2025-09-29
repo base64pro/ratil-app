@@ -2,8 +2,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import List, Optional
 from datetime import datetime
 
-# --- START: MODIFICATION ---
-# User schemas updated for new logic and fields
+# --- User Schemas ---
 class UserLogin(BaseModel):
     username: str
     password: str
@@ -11,7 +10,7 @@ class UserLogin(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "admin" # Default role is now admin
+    role: str = "admin"
     can_access_portfolio: bool = True
 
 class User(BaseModel):
@@ -24,9 +23,8 @@ class User(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str
-# --- END: MODIFICATION ---
 
-
+# --- Content Schemas ---
 class ContentItemBase(BaseModel):
     title: str
     description: str
@@ -36,13 +34,11 @@ class ContentItem(ContentItemBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
-
 class AdminContentItem(ContentItem):
     category: str
     subcategory_id: int
     subcategory_name: str
     model_config = ConfigDict(from_attributes=True)
-
 
 class SubcategoryBase(BaseModel):
     name: str
@@ -54,9 +50,19 @@ class Subcategory(SubcategoryBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
-# --- START: NEW SCHEMAS for Portfolio ---
-class ClientBase(BaseModel):
+class Category(BaseModel):
+    id: int
     name: str
+    display_name: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Client and Portfolio Schemas ---
+class ClientBase(BaseModel):
+    # --- START: MODIFICATION ---
+    # Client name is now optional
+    name: Optional[str] = None
+    # --- END: MODIFICATION ---
     contact_person: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
@@ -64,6 +70,13 @@ class ClientBase(BaseModel):
 
 class ClientCreate(ClientBase):
     pass
+
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    contact_person: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    email: Optional[EmailStr] = None
 
 class Client(ClientBase):
     id: int
@@ -75,15 +88,13 @@ class PortfolioItemBase(BaseModel):
 
 class PortfolioItemCreate(PortfolioItemBase):
     client_id: int
-    portfolio_category_id: int
+    category_id: int
 
 class PortfolioItem(PortfolioItemBase):
     id: int
     file_url: str
     upload_date: datetime
     client: Client
-    portfolio_category: Subcategory
+    category: Category
 
     model_config = ConfigDict(from_attributes=True)
-# --- END: NEW SCHEMAS ---
-

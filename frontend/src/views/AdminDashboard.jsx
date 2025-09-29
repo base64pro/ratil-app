@@ -6,7 +6,6 @@ import ParticleBackground from '../components/ParticleBackground';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-
 // --- START: PROFESSIONAL ADMIN DASHBOARD STYLES ---
 const AdminDashboardStyles = `
   :root { --admin-primary: #3b82f6; --admin-primary-dark: #2563eb; --admin-danger: #ef4444; --admin-danger-dark: #dc2626; --admin-success: #22c55e; --admin-success-dark: #16a34a; --admin-bg-light: rgba(255, 255, 255, 0.05); --admin-bg-dark: rgba(0, 0, 0, 0.2); --admin-border-color: rgba(255, 255, 255, 0.1); }
@@ -39,6 +38,8 @@ const AdminDashboardStyles = `
   .form-button:hover:not(:disabled) { background: var(--admin-primary-dark); }
   .form-button.danger { background: var(--admin-danger); }
   .form-button.danger:hover { background: var(--admin-danger-dark); }
+  .form-button.secondary { background-color: rgba(255, 255, 255, 0.1); }
+  .form-button.secondary:hover { background-color: rgba(255, 255, 255, 0.2); }
   .form-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .data-table { width: 100%; border-collapse: collapse; color: #ffffff; }
@@ -67,7 +68,6 @@ const AdminDashboardStyles = `
   }
 `;
 
-// Helper component for consistent section layout
 const Section = ({ title, children }) => (
     <motion.div
         className="dashboard-section"
@@ -79,28 +79,24 @@ const Section = ({ title, children }) => (
         {children}
     </motion.div>
 );
-
 function AdminDashboard({ onBack }) {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('portfolio');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // State slices for different managers
     const [users, setUsers] = useState([]);
     const [clients, setClients] = useState([]);
     const [publicContent, setPublicContent] = useState([]);
     const [portfolioItems, setPortfolioItems] = useState([]);
-    const [publicSubcategories, setPublicSubcategories] = useState({}); // { printedMaterials: [], billboards: [] }
-    const [portfolioSubcategories, setPortfolioSubcategories] = useState([]);
-
-    // Fetches all data needed for the dashboard in one go
+    const [publicSubcategories, setPublicSubcategories] = useState({});
+    const [mainCategories, setMainCategories] = useState([]);
     const fetchAllData = async () => {
         setLoading(true);
         try {
             const [
                 usersRes, clientsRes, publicContentRes, portfolioItemsRes,
-                printedMaterialsRes, billboardsRes, eventsRes, exhibitionRes, portfolioCatRes
+                printedMaterialsRes, billboardsRes, eventsRes, exhibitionRes
             ] = await Promise.all([
                 axios.get(`${API_BASE_URL}/api/users`),
                 axios.get(`${API_BASE_URL}/api/clients`),
@@ -110,7 +106,6 @@ function AdminDashboard({ onBack }) {
                 axios.get(`${API_BASE_URL}/api/content/billboards/subcategories`),
                 axios.get(`${API_BASE_URL}/api/content/events/subcategories`),
                 axios.get(`${API_BASE_URL}/api/content/exhibition/subcategories`),
-                axios.get(`${API_BASE_URL}/api/content/portfolio/subcategories`),
             ]);
 
             setUsers(usersRes.data);
@@ -123,7 +118,13 @@ function AdminDashboard({ onBack }) {
                 events: eventsRes.data,
                 exhibition: exhibitionRes.data,
             });
-            setPortfolioSubcategories(portfolioCatRes.data);
+            // Assuming IDs are created in order by the backend
+            setMainCategories([
+                { id: 1, display_name: 'المواد المطبوعة' },
+                { id: 2, display_name: 'تاجير لافتات طرقية عملاقة' },
+                { id: 3, display_name: 'تنظيم المؤتمرات والمناسبات' },
+                { id: 4, display_name: 'بيع الاجهزة والمعدات الطباعية' },
+            ]);
             setError('');
         } catch (err) {
             console.error("Failed to fetch dashboard data:", err);
@@ -136,7 +137,6 @@ function AdminDashboard({ onBack }) {
     useEffect(() => {
         fetchAllData();
     }, []);
-
     const TabButton = ({ tabId, children }) => (
         <button
             className={`tab-button ${activeTab === tabId ? 'active' : ''}`}
@@ -145,7 +145,6 @@ function AdminDashboard({ onBack }) {
             {children}
         </button>
     );
-
     return (
         <>
             <style>{AdminDashboardStyles}</style>
@@ -157,18 +156,20 @@ function AdminDashboard({ onBack }) {
                 </div>
                 <div className="page-content">
                     {loading ? (
-                        <p>جاري تحميل البيانات...</p>
+                        <p style={{padding: '2rem', textAlign: 'center'}}>جاري تحميل البيانات...</p>
                     ) : error ? (
-                        <p style={{ color: 'red' }}>{error}</p>
+                        <p style={{ color: 'red', padding: '2rem', textAlign: 'center' }}>{error}</p>
                     ) : (
                         <div className="dashboard-layout">
                             <nav className="tabs-nav">
                                 <TabButton tabId="portfolio">المحفظة الرقمية</TabButton>
+                                <TabButton tabId="clients">العملاء</TabButton>
                                 <TabButton tabId="content">المحتوى العام</TabButton>
                                 <TabButton tabId="system">إدارة النظام</TabButton>
                             </nav>
                             <main className="tab-content">
-                                {activeTab === 'portfolio' && <PortfolioManager clients={clients} categories={portfolioSubcategories} items={portfolioItems} onUpdate={fetchAllData} />}
+                                {activeTab === 'portfolio' && <PortfolioManager clients={clients} mainCategories={mainCategories} items={portfolioItems} onUpdate={fetchAllData} />}
+                                {activeTab === 'clients' && <ClientManager clients={clients} onUpdate={fetchAllData} />}
                                 {activeTab === 'content' && <PublicContentManager categoriesMap={publicSubcategories} items={publicContent} onUpdate={fetchAllData} />}
                                 {activeTab === 'system' && <SystemManager currentUser={user} users={users} onUpdate={fetchAllData} />}
                             </main>
@@ -180,27 +181,29 @@ function AdminDashboard({ onBack }) {
     );
 }
 
-// --- Portfolio Management Tab ---
-const PortfolioManager = ({ clients, categories, items, onUpdate }) => {
+const PortfolioManager = ({ clients, mainCategories, items, onUpdate }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [clientId, setClientId] = useState('');
-    const [portfolioCategoryId, setPortfolioCategoryId] = useState('');
+    const [categoryId, setCategoryId] = useState('');
     const [file, setFile] = useState(null);
+    const [linkUrl, setLinkUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
-    
-    const [newClientName, setNewClientName] = useState('');
-    const [newCategoryName, setNewCategoryName] = useState('');
-
+    const [clientSearchTerm, setClientSearchTerm] = useState('');
+    const filteredClients = useMemo(() => {
+        if (!clientSearchTerm) return clients;
+        return clients.filter(c => 
+            c.name.toLowerCase().includes(clientSearchTerm.toLowerCase())
+        );
+    }, [clients, clientSearchTerm]);
     useEffect(() => {
         if (clients.length > 0 && !clientId) setClientId(clients[0].id);
-        if (categories.length > 0 && !portfolioCategoryId) setPortfolioCategoryId(categories[0].id);
-    }, [clients, categories]);
-
+        if (mainCategories.length > 0 && !categoryId) setCategoryId(mainCategories[0].id);
+    }, [clients, mainCategories]);
     const handleUpload = async (e) => {
         e.preventDefault();
-        if (!file || !clientId || !portfolioCategoryId) {
-            Swal.fire('خطأ', 'الرجاء اختيار عميل وقسم وملف للرفع.', 'error');
+        if ((!file && !linkUrl) || !clientId || !categoryId) {
+            Swal.fire('خطأ', 'الرجاء اختيار عميل وقسم ورفع ملف أو إضافة رابط.', 'error');
             return;
         }
         setIsUploading(true);
@@ -208,8 +211,9 @@ const PortfolioManager = ({ clients, categories, items, onUpdate }) => {
         formData.append('title', title);
         formData.append('description', description);
         formData.append('client_id', clientId);
-        formData.append('portfolio_category_id', portfolioCategoryId);
-        formData.append('file', file);
+        formData.append('category_id', categoryId);
+        if (file) formData.append('file', file);
+        if (linkUrl) formData.append('link_url', linkUrl);
 
         try {
             await axios.post(`${API_BASE_URL}/api/portfolio/upload`, formData);
@@ -221,22 +225,9 @@ const PortfolioManager = ({ clients, categories, items, onUpdate }) => {
             setIsUploading(false);
         }
     };
-    
-    // Generic delete handler
-    const handleDelete = (type, id, name) => {
-        const endpoints = {
-            client: `${API_BASE_URL}/api/clients/${id}`,
-            portfolioCategory: `${API_BASE_URL}/api/content/portfolio/subcategories/${id}`,
-            portfolioItem: `${API_BASE_URL}/api/portfolio/items/${id}`,
-        };
-        const messages = {
-            client: `العميل "${name}"`,
-            portfolioCategory: `القسم "${name}"`,
-            portfolioItem: `المادة "${name}"`,
-        };
-
+    const handleDelete = (id, name) => {
         Swal.fire({
-            title: `هل أنت متأكد من حذف ${messages[type]}؟`,
+            title: `هل أنت متأكد من حذف المادة "${name}"؟`,
             text: "لا يمكن التراجع عن هذا الإجراء!",
             icon: 'warning',
             showCancelButton: true,
@@ -244,11 +235,11 @@ const PortfolioManager = ({ clients, categories, items, onUpdate }) => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await axios.delete(endpoints[type]);
-                    Swal.fire('نجاح', `تم حذف ${messages[type]} بنجاح`, 'success');
+                    await axios.delete(`${API_BASE_URL}/api/portfolio/items/${id}`);
+                    Swal.fire('نجاح', `تم حذف المادة بنجاح`, 'success');
                     onUpdate();
                 } catch (err) {
-                    Swal.fire('خطأ', `فشل حذف ${messages[type]}`, 'error');
+                    Swal.fire('خطأ', `فشل حذف المادة`, 'error');
                 }
             }
         });
@@ -260,32 +251,202 @@ const PortfolioManager = ({ clients, categories, items, onUpdate }) => {
                 <form onSubmit={handleUpload}>
                     <div className="form-grid">
                         <div className="form-input-group"><label>العنوان</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="form-input" required /></div>
-                        <div className="form-input-group"><label>العميل</label><select value={clientId} onChange={e => setClientId(e.target.value)} className="form-select">{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-                        <div className="form-input-group"><label>القسم</label><select value={portfolioCategoryId} onChange={e => setPortfolioCategoryId(e.target.value)} className="form-select">{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                        
+                        <div className="form-input-group">
+                            <label>العميل</label>
+                            <input 
+                                type="text" 
+                                placeholder="ابحث عن عميل..." 
+                                value={clientSearchTerm}
+                                onChange={e => setClientSearchTerm(e.target.value)}
+                                className="form-input"
+                                style={{marginBottom: '0.5rem'}}
+                            />
+                            <select value={clientId} onChange={e => setClientId(e.target.value)} className="form-select">
+                                {filteredClients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="form-input-group">
+                            <label>القسم</label>
+                            <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="form-select">
+                                {mainCategories.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+                            </select>
+                        </div>
+
                         <div className="form-input-group"><label>الوصف</label><textarea value={description} onChange={e => setDescription(e.target.value)} className="form-textarea"></textarea></div>
-                        <div className="form-input-group"><label>الملف</label><input type="file" onChange={e => setFile(e.target.files[0])} className="form-input" required /></div>
+                        <div className="form-input-group"><label>الملف (اختياري)</label><input type="file" onChange={e => setFile(e.target.files[0])} className="form-input" /></div>
+                        <div className="form-input-group"><label>أو رابط المادة (اختياري)</label><input type="text" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} className="form-input" placeholder="https://example.com" /></div>
                     </div>
                     <button type="submit" className="form-button" style={{marginTop: '1rem'}} disabled={isUploading}>{isUploading ? 'جارِ الرفع...' : 'رفع المادة'}</button>
                 </form>
-                 <table className="data-table" style={{marginTop: '2rem'}}><thead><tr><th>العنوان</th><th>العميل</th><th>القسم</th><th>إجراءات</th></tr></thead><tbody>{items.map(i => <tr key={i.id}><td>{i.title}</td><td>{i.client.name}</td><td>{i.portfolio_category.name}</td><td><button className="delete-button" onClick={() => handleDelete('portfolioItem', i.id, i.title)}>حذف</button></td></tr>)}</tbody></table>
+                 <table className="data-table" style={{marginTop: '2rem'}}>
+                    <thead><tr><th>العنوان</th><th>العميل</th><th>القسم</th><th>إجراءات</th></tr></thead>
+                    <tbody>
+                        {items.map(i => <tr key={i.id}><td>{i.title}</td><td>{i.client.name}</td><td>{i.category.display_name}</td><td><button className="delete-button" onClick={() => handleDelete(i.id, i.title)}>حذف</button></td></tr>)}
+                    </tbody>
+                </table>
             </Section>
         </div>
     );
 };
 
-// --- Public Content Management Tab ---
+const ClientManager = ({ clients, onUpdate }) => {
+    const [addFormState, setAddFormState] = useState({ name: '', contact_person: '', phone: '', email: '', address: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [editingClient, setEditingClient] = useState(null); // State for the client being edited
+
+    const filteredClients = useMemo(() => {
+        if (!searchTerm) return clients;
+        return clients.filter(c =>
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.contact_person && c.contact_person.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [clients, searchTerm]);
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setAddFormState(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCreateClient = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${API_BASE_URL}/api/clients`, addFormState);
+            Swal.fire('نجاح', 'تم تعريف العميل بنجاح', 'success');
+            setAddFormState({ name: '', contact_person: '', phone: '', email: '', address: '' });
+            onUpdate();
+        } catch (err) {
+            Swal.fire('خطأ', 'فشل تعريف العميل', 'error');
+        }
+    };
+    
+    const handleEditClick = (client) => {
+        setEditingClient({ ...client }); // Set the client to be edited, creating a copy
+    };
+    const handleUpdateClient = async (e) => {
+        e.preventDefault();
+        if (!editingClient) return;
+        try {
+            await axios.put(`${API_BASE_URL}/api/clients/${editingClient.id}`, editingClient);
+            Swal.fire('نجاح', 'تم تحديث بيانات العميل بنجاح', 'success');
+            setEditingClient(null); // Close the modal
+            onUpdate();
+        } catch (err) {
+            Swal.fire('خطأ', 'فشل تحديث بيانات العميل', 'error');
+        }
+    };
+
+    const handleEditFormChange = (e) => {
+        const { name, value } = e.target;
+        setEditingClient(prev => ({ ...prev, [name]: value }));
+    };
+
+
+    const handleDeleteClient = (clientId, clientName) => {
+        Swal.fire({
+            title: `هل أنت متأكد من حذف العميل "${clientName}"؟`,
+            text: "سيتم حذف جميع مواد المحفظة المرتبطة به!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، قم بالحذف'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.delete(`${API_BASE_URL}/api/clients/${clientId}`);
+                    Swal.fire('نجاح', `تم حذف العميل بنجاح`, 'success');
+                    onUpdate();
+                } catch (err) {
+                    Swal.fire('خطأ', `فشل حذف العميل`, 'error');
+                }
+            }
+        });
+    };
+
+    return (
+        <div>
+            <Section title="إضافة عميل جديد">
+                <form onSubmit={handleCreateClient}>
+                    <div className="form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                        <div className="form-input-group"><label>اسم العميل</label><input type="text" name="name" value={addFormState.name} onChange={handleInputChange} className="form-input" required /></div>
+                        <div className="form-input-group"><label>الشخص المسؤول</label><input type="text" name="contact_person" value={addFormState.contact_person} onChange={handleInputChange} className="form-input" /></div>
+                        <div className="form-input-group"><label>الهاتف</label><input type="text" name="phone" value={addFormState.phone} onChange={handleInputChange} className="form-input" /></div>
+                        <div className="form-input-group"><label>البريد الإلكتروني</label><input type="email" name="email" value={addFormState.email} onChange={handleInputChange} className="form-input" /></div>
+                    </div>
+                    <div className="form-input-group" style={{marginTop: '1.5rem'}}>
+                        <label>العنوان</label>
+                        <textarea name="address" value={addFormState.address} onChange={handleInputChange} className="form-textarea"></textarea>
+                    </div>
+                    <button type="submit" className="form-button" style={{marginTop: '1rem'}}>حفظ العميل</button>
+                </form>
+            </Section>
+            <Section title="قائمة العملاء">
+                <div className="form-input-group" style={{ maxWidth: '400px', marginBottom: '1.5rem' }}>
+                    <label>ابحث عن عميل</label>
+                    <input
+                        type="text"
+                        placeholder="اكتب اسم العميل أو المسؤول..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="form-input"
+                    />
+                </div>
+                <table className="data-table">
+                    <thead><tr><th>اسم العميل</th><th>المسؤول</th><th>الهاتف</th><th>الإجراءات</th></tr></thead>
+                    <tbody>
+                        {filteredClients.map(c => (
+                            <tr key={c.id}>
+                                <td>{c.name}</td>
+                                <td>{c.contact_person || '-'}</td>
+                                <td>{c.phone || '-'}</td>
+                                <td>
+                                    <button className="action-button edit-button" onClick={() => handleEditClick(c)}>تعديل</button>
+                                    <button className="action-button delete-button" onClick={() => handleDeleteClient(c.id, c.name)}>حذف</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </Section>
+
+            <AnimatePresence>
+                {editingClient && (
+                    <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
+                            <Section title={`تعديل بيانات: ${editingClient.name}`}>
+                                <form onSubmit={handleUpdateClient}>
+                                     <div className="form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                                        <div className="form-input-group"><label>اسم العميل</label><input type="text" name="name" value={editingClient.name} onChange={handleEditFormChange} className="form-input" required /></div>
+                                        <div className="form-input-group"><label>الشخص المسؤول</label><input type="text" name="contact_person" value={editingClient.contact_person || ''} onChange={handleEditFormChange} className="form-input" /></div>
+                                        <div className="form-input-group"><label>الهاتف</label><input type="text" name="phone" value={editingClient.phone || ''} onChange={handleEditFormChange} className="form-input" /></div>
+                                        <div className="form-input-group"><label>البريد الإلكتروني</label><input type="email" name="email" value={editingClient.email || ''} onChange={handleEditFormChange} className="form-input" /></div>
+                                    </div>
+                                    <div className="form-input-group" style={{marginTop: '1.5rem'}}>
+                                        <label>العنوان</label>
+                                        <textarea name="address" value={editingClient.address || ''} onChange={handleEditFormChange} className="form-textarea"></textarea>
+                                    </div>
+                                    <div className="modal-actions">
+                                        <button type="button" className="form-button secondary" onClick={() => setEditingClient(null)}>إلغاء</button>
+                                        <button type="submit" className="form-button">حفظ التعديلات</button>
+                                    </div>
+                                </form>
+                            </Section>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
     const [activeMainCategory, setActiveMainCategory] = useState('printedMaterials');
     const [newSubcategoryName, setNewSubcategoryName] = useState('');
-    
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [subcategoryId, setSubcategoryId] = useState('');
     const [file, setFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-
     const currentSubcategories = categoriesMap[activeMainCategory] || [];
-
     useEffect(() => {
         if (currentSubcategories.length > 0) {
             setSubcategoryId(currentSubcategories[0].id);
@@ -293,7 +454,6 @@ const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
             setSubcategoryId('');
         }
     }, [activeMainCategory, categoriesMap]);
-
     const handleCreateSubcategory = async (e) => {
         e.preventDefault();
         try {
@@ -347,7 +507,6 @@ const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
             setIsUploading(false);
         }
     };
-    
     const handleDeleteContent = (item) => {
          Swal.fire({
             title: `هل أنت متأكد من حذف "${item.title}"؟`,
@@ -365,7 +524,7 @@ const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
         });
     };
 
-    return (
+    return ( 
         <div>
             <Section title="إدارة الأقسام الفرعية العامة">
                 <div className="form-input-group" style={{maxWidth: '400px', marginBottom: '1.5rem'}}>
@@ -384,7 +543,7 @@ const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
                  <table className="data-table"><thead><tr><th>اسم القسم الفرعي</th><th>إجراءات</th></tr></thead><tbody>{currentSubcategories.map(s => <tr key={s.id}><td>{s.name}</td><td><button className="delete-button" onClick={() => handleDeleteSubcategory(s.id, s.name)}>حذف</button></td></tr>)}</tbody></table>
             </Section>
             <Section title="إضافة محتوى عام جديد">
-                 <form onSubmit={handleAddContent}>
+                <form onSubmit={handleAddContent}>
                     <div className="form-grid">
                         <div className="form-input-group"><label>العنوان</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} className="form-input" required /></div>
                         <div className="form-input-group"><label>القسم الفرعي (من القسم الرئيسي المحدد أعلاه)</label><select value={subcategoryId} onChange={e => setSubcategoryId(e.target.value)} className="form-select">{currentSubcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
@@ -395,17 +554,14 @@ const PublicContentManager = ({ categoriesMap, items, onUpdate }) => {
                 </form>
                  <table className="data-table" style={{marginTop: '2rem'}}><thead><tr><th>العنوان</th><th>القسم الرئيسي</th><th>القسم الفرعي</th><th>إجراءات</th></tr></thead><tbody>{items.map(i => <tr key={i.id}><td>{i.title}</td><td>{i.category}</td><td>{i.subcategory_name}</td><td><button className="delete-button" onClick={() => handleDeleteContent(i)}>حذف</button></td></tr>)}</tbody></table>
             </Section>
-        </div>
+        </div> 
     );
 };
 
-
-// --- System Management Tab ---
 const SystemManager = ({ currentUser, users, onUpdate }) => {
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [canAccessPortfolio, setCanAccessPortfolio] = useState(true);
-    
     const [currentPassword, setCurrentPassword] = useState('');
     const [newAdminPassword, setNewAdminPassword] = useState('');
     const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
@@ -417,7 +573,7 @@ const SystemManager = ({ currentUser, users, onUpdate }) => {
             Swal.fire('نجاح', 'تم إنشاء المستخدم بنجاح', 'success');
             setNewUsername('');
             setNewPassword('');
-            onUpdate(); // Refresh data
+            onUpdate();
         } catch (err) {
             Swal.fire('خطأ', err.response?.data?.detail || 'فشل إنشاء المستخدم', 'error');
         }
@@ -478,7 +634,7 @@ const SystemManager = ({ currentUser, users, onUpdate }) => {
                              <label htmlFor="new-password">كلمة المرور</label>
                             <input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" required />
                         </div>
-                         <div className="form-input-group" style={{justifyContent: 'center'}}>
+                        <div className="form-input-group" style={{justifyContent: 'center'}}>
                             <div className="checkbox-group">
                                 <input id="can-access" type="checkbox" checked={canAccessPortfolio} onChange={e => setCanAccessPortfolio(e.target.checked)} />
                                 <label htmlFor="can-access">يمكنه الوصول للمحفظة</label>
@@ -509,14 +665,14 @@ const SystemManager = ({ currentUser, users, onUpdate }) => {
                             <label htmlFor="current-pass">كلمة المرور الحالية</label>
                             <input id="current-pass" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="form-input" required />
                         </div>
-                         <div className="form-input-group">
+                        <div className="form-input-group">
                             <label htmlFor="new-admin-pass">كلمة المرور الجديدة</label>
                             <input id="new-admin-pass" type="password" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} className="form-input" required />
                         </div>
                          <div className="form-input-group">
                             <label htmlFor="confirm-admin-pass">تأكيد الجديدة</label>
                             <input id="confirm-admin-pass" type="password" value={confirmAdminPassword} onChange={e => setConfirmAdminPassword(e.target.value)} className="form-input" required />
-                        </div>
+                         </div>
                     </div>
                     <button type="submit" className="form-button" style={{marginTop: '1rem'}}>حفظ التغييرات</button>
                  </form>
@@ -525,6 +681,4 @@ const SystemManager = ({ currentUser, users, onUpdate }) => {
     );
 };
 
-
 export default AdminDashboard;
-

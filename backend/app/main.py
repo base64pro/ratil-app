@@ -61,7 +61,7 @@ def create_initial_data(db: Session):
         "printedMaterials": "المواد المطبوعة",
         "billboards": "تاجير لافتات طرقية عملاقة",
         "events": "تنظيم المؤتمرات والمناسبات",
-        "exhibition": "بيع الاجهزة والمعدات الطباعية", # Text updated
+        "exhibition": "بيع الاجهزة والمعدات الطباعية",
         "portfolio": "محفظة الروابط والمواد الرقمية" 
     }
 
@@ -155,8 +155,7 @@ def add_content_to_subcategory_admin(subcategory_id: int, title: str = Form(...)
     if not db.query(models.Subcategory).filter(models.Subcategory.id == subcategory_id).first(): raise HTTPException(status_code=404, detail="Subcategory not found")
     file_url = ""
     if file and file.filename:
-        resource_type = "video" if file.content_type and file.content_type.startswith("video") else "image"
-        upload_result = cloudinary.uploader.upload(file.file, resource_type=resource_type, folder="ratil_group_content")
+        upload_result = cloudinary.uploader.upload(file.file, resource_type="auto", folder="ratil_group_content")
         file_url = upload_result.get("secure_url", "")
     new_item = models.ContentItem(title=title, description=description, imageUrl=file_url, subcategory_id=subcategory_id)
     db.add(new_item); db.commit(); db.refresh(new_item)
@@ -172,7 +171,6 @@ def delete_content_item_admin(item_id: int, db: Session = Depends(get_db)):
 @app.get("/api/admin/content", response_model=List[schemas.AdminContentItem])
 def get_all_content_for_admin(db: Session = Depends(get_db)):
     all_items = db.query(models.ContentItem).options(joinedload(models.ContentItem.owner_subcategory).joinedload(models.Subcategory.owner_category)).all()
-    # Using a direct mapping assuming all relationships are loaded
     response_items = []
     for item in all_items:
         response_items.append(schemas.AdminContentItem(
@@ -193,10 +191,30 @@ def get_clients(q: Optional[str] = None, db: Session = Depends(get_db)):
 
 @app.post("/api/clients", response_model=schemas.Client, status_code=status.HTTP_201_CREATED)
 def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
-    new_client = models.Client(**client.dict())
+    client_data = client.dict()
+    # If name is not provided, create a default one
+    if not client_data.get("name"):
+        client_data["name"] = f"عميل غير مسمى - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    
+    new_client = models.Client(**client_data)
     db.add(new_client); db.commit(); db.refresh(new_client)
     return new_client
     
+@app.put("/api/clients/{client_id}", response_model=schemas.Client)
+def update_client(client_id: int, client_update: schemas.ClientUpdate, db: Session = Depends(get_db)):
+    db_client = db.query(models.Client).filter(models.Client.id == client_id).first()
+    if not db_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    update_data = client_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_client, key, value)
+        
+    db.add(db_client)
+    db.commit()
+    db.refresh(db_client)
+    return db_client
+
 @app.delete("/api/clients/{client_id}", status_code=status.HTTP_200_OK)
 def delete_client(client_id: int, db: Session = Depends(get_db)):
     db_client = db.query(models.Client).filter(models.Client.id == client_id).first()
@@ -206,16 +224,15 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/portfolio/items", response_model=List[schemas.PortfolioItem])
 def get_portfolio_items(
-    q: Optional[str] = Query(None), # <<< NEW: Search term for title/description
+    q: Optional[str] = Query(None), 
     category_id: Optional[int]=Query(None), 
     client_id: Optional[int]=Query(None), 
     start_date: Optional[str]=Query(None), 
     end_date: Optional[str]=Query(None), 
     db: Session=Depends(get_db)
 ):
-    query = db.query(models.PortfolioItem).options(joinedload(models.PortfolioItem.client), joinedload(models.PortfolioItem.portfolio_category)).order_by(models.PortfolioItem.upload_date.desc())
+    query = db.query(models.PortfolioItem).options(joinedload(models.PortfolioItem.client), joinedload(models.PortfolioItem.category)).order_by(models.PortfolioItem.upload_date.desc())
     
-    # <<< NEW: Text search logic
     if q:
         search_term = f"%{q.lower()}%"
         query = query.filter(or_(
@@ -223,24 +240,60 @@ def get_portfolio_items(
             models.PortfolioItem.description.ilike(search_term)
         ))
     
-    if category_id: query = query.filter(models.PortfolioItem.portfolio_category_id == category_id)
+    if category_id: query = query.filter(models.PortfolioItem.category_id == category_id)
     if client_id: query = query.filter(models.PortfolioItem.client_id == client_id)
     if start_date: query = query.filter(models.PortfolioItem.upload_date >= datetime.fromisoformat(start_date))
     if end_date: query = query.filter(models.PortfolioItem.upload_date <= datetime.fromisoformat(end_date))
     return query.all()
 
+# --- START: MODIFICATION ---
 @app.post("/api/portfolio/upload", response_model=schemas.PortfolioItem, status_code=status.HTTP_201_CREATED)
-def upload_portfolio_item(title: str=Form(...), description: Optional[str]=Form(None), client_id: int=Form(...), portfolio_category_id: int=Form(...), file: UploadFile=File(...), db: Session=Depends(get_db)):
-    client = db.query(models.Client).filter(models.Client.id == client_id).first()
-    if not client: raise HTTPException(404, "Client not found")
+def upload_portfolio_item(
+    title: str=Form(...), 
+    category_id: int=Form(...),
+    description: Optional[str]=Form(None), 
+    client_id: Optional[int] = Form(None), 
+    link_url: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None), 
+    db: Session=Depends(get_db)
+):
+    if not file and not link_url:
+        raise HTTPException(status_code=400, detail="يجب رفع ملف أو إضافة رابط.")
+
+    # Validate client if provided
+    client = None
+    if client_id:
+        client = db.query(models.Client).filter(models.Client.id == client_id).first()
+        if not client: raise HTTPException(404, "Client not found")
+    
+    # Validate category
+    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category: raise HTTPException(404, "Category not found")
+    
     now = datetime.utcnow()
-    folder_path = f"portfolio/{now.year}/{now.month:02d}/{now.day:02d}/{client.name.replace(' ', '_')}"
-    resource_type = "video" if file.content_type and file.content_type.startswith("video") else "image"
-    upload_result = cloudinary.uploader.upload(file.file, resource_type=resource_type, folder=folder_path)
-    file_url = upload_result.get("secure_url", "")
-    new_item = models.PortfolioItem(title=title, description=description, file_url=file_url, client_id=client_id, portfolio_category_id=portfolio_category_id, upload_date=now)
-    db.add(new_item); db.commit(); db.refresh(new_item, attribute_names=['client', 'portfolio_category'])
+    file_url = ""
+
+    if link_url:
+        file_url = link_url
+    elif file and file.filename:
+        client_name_for_path = client.name.replace(' ', '_') if client else "General"
+        folder_path = f"portfolio/{now.year}/{now.month:02d}/{now.day:02d}/{client_name_for_path}"
+        upload_result = cloudinary.uploader.upload(file.file, resource_type="auto", folder=folder_path)
+        file_url = upload_result.get("secure_url", "")
+    
+    new_item = models.PortfolioItem(
+        title=title, 
+        description=description, 
+        file_url=file_url, 
+        client_id=client_id, 
+        category_id=category_id, 
+        upload_date=now
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item, attribute_names=['client', 'category'])
     return new_item
+# --- END: MODIFICATION ---
 
 @app.delete("/api/portfolio/items/{item_id}", status_code=status.HTTP_200_OK)
 def delete_portfolio_item(item_id: int, db: Session=Depends(get_db)):
@@ -248,4 +301,3 @@ def delete_portfolio_item(item_id: int, db: Session=Depends(get_db)):
     if not db_item: raise HTTPException(status_code=404, detail="Portfolio item not found")
     db.delete(db_item); db.commit()
     return {"status": "success", "message": "Item deleted successfully"}
-
